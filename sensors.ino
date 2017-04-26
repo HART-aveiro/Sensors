@@ -4,6 +4,12 @@
 #include "hartimu.h"
 #include <Wire.h>
 
+//#include <Adafruit_Sensor.h>
+#include "Thum.h"
+
+
+Thum thum; 
+
 const int led = 13;  // the pin with a LED
 
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
@@ -14,7 +20,7 @@ void setup(void){
   //noInterrupts();
   pinMode(led, OUTPUT);
   digitalWrite(led,LOW);
-
+  thum.set(); 
 
   initialize_imu();
   Serial.begin(115200);
