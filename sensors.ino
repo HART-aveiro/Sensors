@@ -6,10 +6,23 @@
 
 #include <idDHT11.h>
 
+#include <Servo.h> 
+#include "brsh.h"
+
+#define pinPhotoDiode 2
+#define pinServo 4
+#define pinBrushless 6
+
+#define lowAngle 60
+#define upAngle 140
+
+Servo servo;
 
 
 const int led = 13;  // the pin with a LED
 
+int flag=0, canDo=0;
+int pos = lowAngle;
 
 //DHT11 declarations
 int idDHT11pin = 3; //Digital pin for comunications
@@ -34,36 +47,75 @@ void setup(void){
   pinMode(led, OUTPUT);
   digitalWrite(led,LOW);
 
+
+  servo.attach(pinServo);
+
+  brsh brushless(pinBrushless);
+  brushless.turnOn();
+
+  //MPU6050 initialization
   initialize_imu();
+
+  //Serial initialization
   Serial.begin(115200);
   Serial.println("Hello im working");
 
-  
-//  lastTime=millis();
-
+  //Timer initialization
+  //Timer is used for interrupt
   Timer1.initialize(1000);
-
   Timer1.attachInterrupt(getSensors); // blinkLED to run every 0.15 seconds
   Timer1.start();
+
+ 
+  brushless.defineVelocity(10);
+
+  attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,HIGH);
+
+  
+}
+
+
+
+void changeAngle(){  
+  if(pos>=upAngle && canDo==1){
+    canDo=0;
+    flag=0;
+  }
+  if(pos<=lowAngle &&canDo==1){
+    canDo=0;
+    flag=1;
+  }
+  
+  if(flag==1){
+    pos++;
+  }
+  if(flag==0){
+    pos--;
+  }
 }
 
 void dht11_wrapper() {
   DHT11.isrCallback();
 }
-int flag=0;
 
-int countMPU=0;
-volatile int countTemp=0;
+int countMPU=0; //Counter for MPU
+volatile int countTemp=0; //Counter for DHT11
+
+
+//temporary vartiable for exchange data between variables
 short temp;
 
 
-void getSensors(void){
 
-  //Serial.write('i');
-
+void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
+  //increment time variables
   countMPU+=1; 
   countTemp+=1;
-  
+  if(countTemp%60==0){
+    canDo=1;
+  }
+
+  //MPU6050 data aquisition  
   if(countMPU==4){
     countMPU=0;
     
@@ -77,12 +129,14 @@ void getSensors(void){
     temp= (short) get_pitch()*10;
     bufMPU->add(bufMPU, &temp);  
   }
+  //end MPU6050 data aquisition
 
-  //digitalWrite(led, LOW);
+
+
 }
 
 
-union sendSHORT{
+union sendShort{    //definition of data typre to be able to separate data bytes
   short send1;
   byte send2[2];
 }sendSHORT;
@@ -91,6 +145,8 @@ union sendSHORT{
 
 
 void loop(void){
+  servo.write(pos);
+  
 //  Serial.println(get_roll());
  if(bufMPU->numElements(bufMPU) >3){
   Serial.print(3);
@@ -98,12 +154,12 @@ void loop(void){
 
 
   bufMPU->pull(bufMPU, &sendSHORT);
-  Serial.print(sendSHORT.send1 );
+  Serial.print(sendSHORT.send1);
 
   Serial.print("            ");
 
   bufMPU->pull(bufMPU, &sendSHORT);
-  Serial.print(sendSHORT.send1 );
+  Serial.print(sendSHORT.send1);
 
   Serial.print("            ");
 
