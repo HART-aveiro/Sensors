@@ -76,8 +76,9 @@
     angle_pitch += GyY*0.004/65.5;
     angle_yaw += GyZ*0.004/65.5;
 
-    angle_roll -= angle_pitch * sin(GyZ*0.000001066);
-    angle_pitch += angle_roll * sin(GyZ*0.000001066);
+    float sinGyZ =sin(GyZ*0.000001066);
+    angle_roll -= angle_pitch * sinGyZ;
+    angle_pitch += angle_roll * sinGyZ;
 
     //accel data treatment
     total_vect_acc = sqrt((AcX*AcX) + (AcY*AcY) + (AcZ*AcZ));

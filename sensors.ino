@@ -25,7 +25,7 @@
 
 
 //DHT
-#define DHTPIN 3
+#define DHTPIN 8
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE); //dht object declaration
 float h = NAN,t = NAN;
@@ -65,7 +65,7 @@ int pos = lowAngle;
 
 
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
-//RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
+RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 
 //time variables for photodiode interrupt
 long lastTime, currentTime;
@@ -75,6 +75,7 @@ int countMPU=0; //Counter for MPU
 volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
 short temp;
+byte temp2, sendBYTE;
 
 
 
@@ -163,9 +164,10 @@ void changeAngle(){
   digitalWrite(L4,HIGH);
   lastTime=currentTime;
   currentTime=millis();
-  
+  /*
+  Serial.println(currentTime-lastTime);
   Serial.println(velocity);
-
+//*/
   if(currentTime-lastTime > 600 && currentTime-lastTime <700){
     canDo=1;
   }else if( currentTime-lastTime < 600){
@@ -203,6 +205,9 @@ void changeAngle(){
 
 void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
 //increment time variables
+  digitalWrite(L2,HIGH);
+
+
   countMPU+=1; 
   countTemp+=1;
   /*if(countTemp%60==0){
@@ -227,6 +232,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
 
 
+  digitalWrite(L2,LOW);
 }
 
 
@@ -239,6 +245,9 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 int run=1;
 bool errorBrush = true;
+
+
+
 void loop(void){
   if(run==1){
     ////////////////////////////////////////////////
@@ -254,7 +263,7 @@ void loop(void){
 ///////////////////////////////////////////////////
 
  ////Brushless test////////////////////////////////
-
+/*
     lastTime=millis();
     currentTime= lastTime;
     errorBrush = true;
@@ -281,36 +290,37 @@ void loop(void){
 
   digitalWrite(L7,LOW);
   digitalWrite(L3,LOW);
+  //*/
 
- ////////////////////////////////////////////////
-  digitalWrite(L8,HIGH);
-  delay(2000);
-  digitalWrite(L8,LOW);
+
 //DHT11 test //////////////////////////////////
  //if (DEBUG){
-  digitalWrite(L1,HIGH);
-  do{
+    digitalWrite(L1,HIGH);
+    do{
+
+      delay(2000);
 //get readings
-   t=dht.readTemperature();
-   h =dht.readHumidity();
+      h =dht.readHumidity();
+      t=dht.readTemperature();
+
 
 //verify if readings are valid
-   if (isnan(h) || isnan(t)) {
-    digitalWrite(L7,HIGH);
-    Serial.println("Failed to read from DHT sensor!");
+      if (isnan(h) || isnan(t)) {
+        digitalWrite(L7,HIGH);
+        Serial.println("Failed to read from DHT sensor!");
 
-  }
-}while(isnan(h) || isnan(t));
+      }
+    }while(isnan(h) || isnan(t));
 
-Serial.println(t);
-Serial.println(h);
+    Serial.println(t);
+    Serial.println(h);
 
-digitalWrite(L1,LOW);
+    digitalWrite(L1,LOW);
 //}
 ///////////////////////////////////////////////////*/
 
-run=0;
-}
+    run=0;
+  }
 
 
 
@@ -320,58 +330,58 @@ run=0;
 //servo.write(pos);
 
 //  Serial.println(get_roll());
-if(bufMPU->numElements(bufMPU) >3){
-  Serial.print(3);
-  Serial.print("            ");
+  if(bufMPU->numElements(bufMPU) >3){
+    Serial.print(3);
+    Serial.print("            ");
 
 
-  bufMPU->pull(bufMPU, &sendSHORT);
-  Serial.print(sendSHORT.send1);
+    bufMPU->pull(bufMPU, &sendSHORT);
+    Serial.print(sendSHORT.send1);
 
-  Serial.print("            ");
+    Serial.print("            ");
 
-  bufMPU->pull(bufMPU, &sendSHORT);
-  Serial.print(sendSHORT.send1);
+    bufMPU->pull(bufMPU, &sendSHORT);
+    Serial.print(sendSHORT.send1);
 
-  Serial.print("            ");
+    Serial.print("            ");
 
-  bufMPU->pull(bufMPU, &sendSHORT);
-  Serial.println(sendSHORT.send1 );
+    bufMPU->pull(bufMPU, &sendSHORT);
+    Serial.println(sendSHORT.send1 );
 
 
 //    Serial.write(sendSHORT.send2[0]);
 //    Serial.write(sendSHORT.send2[1]);
 
-}
+  }
 
-if(countTemp >= 2000) {
-  countTemp=0;
+  if(countTemp >= 2000) {
+    countTemp=0;
 //
-//
+    digitalWrite(L1,HIGH);
+    temp2 =(byte) dht.readHumidity();
+    bufDHT->add(bufDHT,&temp2);
 
+    temp2 =(byte) dht.readTemperature();
+    bufDHT->add(bufDHT,&temp2);
+    digitalWrite(L1,LOW);
 
+  }
 
-
-
-
-
-}
-
-}
-
-/* if(bufDHT->numElements(bufDHT) >2){
-Serial.println(2);
-bufDHT->pull(bufDHT, &sendBYTE);    
+  if(bufDHT->numElements(bufDHT) >2){
+    Serial.println(2);
+    bufDHT->pull(bufDHT, &sendBYTE);    
 //Serial.write(sendBYTE);
 
-Serial.println(sendBYTE);
-bufDHT->pull(bufDHT, &sendBYTE);    
+    Serial.println(sendBYTE);
+    bufDHT->pull(bufDHT, &sendBYTE);    
 //Serial.write(sendBYTE);
 
-Serial.println(sendBYTE);
+    Serial.println(sendBYTE);
 
 
-}*/
+  }
+}//*/
+
 
 
 
