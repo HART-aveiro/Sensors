@@ -28,6 +28,9 @@
       float get_yaw();
       /*!< Function that returns the Z angle*/
 
+      float get_temp();
+      /*!< Function that returns the Temperature*/
+
       void start_mpu_6050();
       /*!< Function that starts the IMU I2C connection*/
 

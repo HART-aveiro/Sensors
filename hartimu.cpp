@@ -108,3 +108,8 @@
   float get_yaw(){
     return angle_yaw;
   }
+
+  float get_temp(){
+    return Tmp;
+  }
+

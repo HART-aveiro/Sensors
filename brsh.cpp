@@ -2,38 +2,68 @@
 #include <Servo.h>
 #include "Arduino.h"
 
-using namespace std;
+//using namespace std;
 
-Servo brushless; // inicializa o objecto servo como variavel global
 
-brsh::brsh(int pin){
+
+/*void initBrush(int pin){
+	Servo brushless; // inicializa o objecto servo como variavel global
 	// associa a variavel servo a um pin do arduino
-	brushless.attach(pin);
-}
+	brushless.attach(pin,1000,2000);
+}*/
 
 
-void brsh::turnOn(void){
+void turnOn(Servo brushless){
 	//liga o brushless e aguarda até ser estavel
-  brushless.writeMicroseconds(0);
+	brushless.writeMicroseconds(0);
 	brushless.writeMicroseconds(1000);
 	delay(6000);
 }
 
-void brsh::turnOff(void){
+void turnOff(Servo brushless){
 	//desliga o brushless e aguarda até estar estavel
-  brushless.writeMicroseconds(1000);
+	brushless.writeMicroseconds(1000);
 	brushless.writeMicroseconds(0);
 	delay(6000);
 }
 
-void brsh::defineVelocity(int percent){
+void defineVelocity(int percent,Servo brushless){
 	//dá uma velocidade e espera que estabilize
 	if (percent<1)
-	percent=1;
+		percent=1;
 	if (percent>100)
-	percent=100;
+		percent=100;
 
 	int velocity=1100+0.75*percent;
-  brushless.writeMicroseconds(velocity);
+	brushless.writeMicroseconds(velocity);
 	//delay(4000);
+}
+
+
+void revive(int pin, Servo brushless){
+	brushless.detach();
+	delay(1000);
+  // Set first the position to prevent the servo to move to the middle
+  // position at initialisation
+  brushless.writeMicroseconds(2000);  // Full power
+  
+  // Only now attach the servo. When passing the proper
+  // minimum and maximum, you will be able to use the degrees
+  // for write. I assumed the standard range from 1000 to 2000
+  // microseconds.
+  brushless.attach(pin, 1000, 2000);
+  
+  // Wait for beep from ESC
+  delay(10000);
+  
+  brushless.writeMicroseconds(1000);  // Power off
+  
+  // Wait for beep from ESC
+  delay(10000);
+
+  
+}
+
+void detach(Servo brushless){
+	brushless.detach();
 }

@@ -4,124 +4,218 @@
 #include "hartimu.h"
 #include <Wire.h>
 
-#include <idDHT11.h>
+#include <DHT.h>
 
 #include <Servo.h> 
 #include "brsh.h"
 
+#define DEBUG 1
+
+
+//Debug LEDs
+#define L1 30 //DHT
+#define L2 31 //MPU
+#define L3 32 //Brushless
+#define L4 33 //MQ7
+#define L5 34 //FIRE
+#define L6 35 //LIDAR
+#define L7 36 ////ERROR/////////////////////////
+#define L8 37 ////OK////////////////////////////
+
+
+
+//DHT
+#define DHTPIN 3
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE); //dht object declaration
+float h = NAN,t = NAN;
+//DHT connections
+// Connect pin 1 (on the left) of the sensor to +5V
+// NOTE: If using a board with 3.3V logic like an Arduino Due connect pin 1
+// to 3.3V instead of 5V!
+// Connect pin 2 of the sensor to whatever your DHTPIN is
+// Connect pin 4 (on the right) of the sensor to GROUND
+// Connect a 10K resistor from pin 2 (data) to pin 1 (power) of the sensor
+
+
+//PhotoDiode
 #define pinPhotoDiode 2
+//Servo
 #define pinServo 4
+//Brushless
 #define pinBrushless 6
 
 #define lowAngle 60
 #define upAngle 140
 
+
+
+
 Servo servo;
 
+//initBrush(pinBrushless);
+Servo brushless;
+int velocity=10;
 
 const int led = 13;  // the pin with a LED
 
-int flag=0, canDo=0;
+int canDo;
+int flag=0;
 int pos = lowAngle;
-
-//DHT11 declarations
-int idDHT11pin = 3; //Digital pin for comunications
-int idDHT11intNumber = 1; //interrupt number (must be the one that use the previus defined pin (see table above)
-void dht11_wrapper(); // must be declared before the lib initialization
-
-// Lib instantiate
-idDHT11 DHT11(idDHT11pin,idDHT11intNumber,dht11_wrapper);
-//end DHT11 declarations
-
 
 
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
 //RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 
-//short teste=-741; 
+//time variables for photodiode interrupt
+long lastTime, currentTime;
 
-//int lastTime=0;
-
-void setup(void){
-  //noInterrupts();
-  pinMode(led, OUTPUT);
-  digitalWrite(led,LOW);
-
-
-  servo.attach(pinServo);
-
-  brsh brushless(pinBrushless);
-  brushless.turnOn();
-
-  //MPU6050 initialization
-  initialize_imu();
-
-  //Serial initialization
-  Serial.begin(115200);
-  Serial.println("Hello im working");
-
-  //Timer initialization
-  //Timer is used for interrupt
-  Timer1.initialize(1000);
-  Timer1.attachInterrupt(getSensors); // blinkLED to run every 0.15 seconds
-  Timer1.start();
-
- 
-  brushless.defineVelocity(10);
-
-  attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,HIGH);
-
-  
-}
-
-
-
-void changeAngle(){  
-  if(pos>=upAngle && canDo==1){
-    canDo=0;
-    flag=0;
-  }
-  if(pos<=lowAngle &&canDo==1){
-    canDo=0;
-    flag=1;
-  }
-  
-  if(flag==1){
-    pos++;
-  }
-  if(flag==0){
-    pos--;
-  }
-}
-
-void dht11_wrapper() {
-  DHT11.isrCallback();
-}
-
+//counter variables for interrupts
 int countMPU=0; //Counter for MPU
 volatile int countTemp=0; //Counter for DHT11
-
-
 //temporary vartiable for exchange data between variables
 short temp;
 
 
 
-void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
-  //increment time variables
-  countMPU+=1; 
-  countTemp+=1;
-  if(countTemp%60==0){
-    canDo=1;
+void setup(void){
+  if(DEBUG){
+    //Define debug LEDpins as output///////////
+    pinMode(L1,OUTPUT);
+    pinMode(L2,OUTPUT);
+    pinMode(L3,OUTPUT);
+    pinMode(L4,OUTPUT);
+    pinMode(L5,OUTPUT);
+    pinMode(L6,OUTPUT);
+    pinMode(L7,OUTPUT);
+    pinMode(L8,OUTPUT);
+    digitalWrite(L1,LOW);
+    digitalWrite(L2,LOW);
+    digitalWrite(L3,LOW);
+    digitalWrite(L4,LOW);
+    digitalWrite(L5,LOW);
+    digitalWrite(L6,LOW);
+    digitalWrite(L7,LOW);
+    digitalWrite(L8,LOW);
+    ///////////////////////////////////////////
   }
 
-  //MPU6050 data aquisition  
+ //Serial initialization////////////////////////
+  Serial.begin(115200);
+  if (DEBUG){
+   Serial.println("Hello im working");
+ }
+ 
+ //////////////////////////////////////////////
+
+ //DHT/////////////////////////////////////////
+ dht.begin();
+
+ /////////////////////////////////////////////
+
+ //MPU6050 initialization//////////////////////
+ initialize_imu();
+ /////////////////////////////////////////////
+
+ //Initialize servo and sendo to pos 60
+ servo.attach(pinServo);
+ servo.write(pos);
+ ////////////////////////////////////////////////
+
+ //initialize brushless/////////////////////////
+ //set speed to 10
+ //brsh brush(pinBrushless);
+
+ brushless.attach(pinBrushless,1000,2000);
+ //brush.turnOn();
+ turnOn(brushless);
+
+ //brush.defineVelocity(10);
+ defineVelocity(velocity,brushless);
+ ///////////////////////////////////////////////
+
+//Timer initialization///////////////////////////
+//Timer is used for interrupt
+ Timer1.initialize(1000);
+ Timer1.attachInterrupt(getSensors);
+  //interrupt every 1ms
+ Timer1.start();
+
+ ////////////////////////////////////////////////
+
+
+//Interrupt from photodiode
+ attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
+ ///////////////////////////////////////////////
+
+
+
+
+
+
+
+}/////////////////////////////////////end setup/
+////////////////////////////////////////////////
+
+
+
+void changeAngle(){  
+  digitalWrite(L4,HIGH);
+  lastTime=currentTime;
+  currentTime=millis();
+  
+  Serial.println(velocity);
+
+  if(currentTime-lastTime > 600 && currentTime-lastTime <700){
+    canDo=1;
+  }else if( currentTime-lastTime < 600){
+    velocity--;
+    defineVelocity(velocity,brushless);
+    canDo=0;
+  }else if( currentTime-lastTime > 700){
+    velocity++;
+    defineVelocity(velocity,brushless);
+    canDo=0;
+  }
+
+
+  if(pos>=upAngle){
+    flag=0;
+  }
+  if(pos<=lowAngle){
+    flag=1;
+  }
+
+  if(flag==1  && canDo==1){
+    canDo = 0;
+    pos++;
+  }
+  if(flag==0  && canDo==1){
+    canDo = 0;
+    pos--;
+  }
+  servo.write(pos);
+  digitalWrite(L4,LOW);
+}
+
+
+
+
+void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
+//increment time variables
+  countMPU+=1; 
+  countTemp+=1;
+  /*if(countTemp%60==0){
+    canDo=1;
+  }*/
+
+//MPU6050 data aquisition  
   if(countMPU==4){
     countMPU=0;
-    
+
     read_mpu_values();
     compute_data();
-    
+
     temp= (short) get_yaw()*10;
     bufMPU->add(bufMPU, &temp);
     temp= (short) get_roll()*10;
@@ -129,7 +223,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     temp= (short) get_pitch()*10;
     bufMPU->add(bufMPU, &temp);  
   }
-  //end MPU6050 data aquisition
+//end MPU6050 data aquisition
 
 
 
@@ -143,12 +237,90 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 
 
-
+int run=1;
+bool errorBrush = true;
 void loop(void){
-  servo.write(pos);
-  
+  if(run==1){
+    ////////////////////////////////////////////////
+////////////////////////////////////////////////
+//////////////////TESTS/////////////////////////
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+
+
+
+//MPU//////////////////////////////////////////////
+
+///////////////////////////////////////////////////
+
+ ////Brushless test////////////////////////////////
+
+    lastTime=millis();
+    currentTime= lastTime;
+    errorBrush = true;
+   // digitalWrite(L3,HIGH);
+    canDo=0;
+    do{
+     while(currentTime-lastTime <= 4000){
+      if(currentTime-lastTime < 700 && canDo == 1){
+        errorBrush=false;
+        break;
+      }
+    }
+    if(errorBrush==true){
+      digitalWrite(L7,HIGH);
+      Serial.print("Error setting brushless speed");
+      //detach(brushless);
+      //revive(pinBrushless ,brushless);
+      brushless.attach(pinBrushless,1000,2000);
+      turnOn(brushless);
+      defineVelocity(10,brushless);
+
+    }
+  }while(errorBrush==true);
+
+  digitalWrite(L7,LOW);
+  digitalWrite(L3,LOW);
+
+ ////////////////////////////////////////////////
+  digitalWrite(L8,HIGH);
+  delay(2000);
+  digitalWrite(L8,LOW);
+//DHT11 test //////////////////////////////////
+ //if (DEBUG){
+  digitalWrite(L1,HIGH);
+  do{
+//get readings
+   t=dht.readTemperature();
+   h =dht.readHumidity();
+
+//verify if readings are valid
+   if (isnan(h) || isnan(t)) {
+    digitalWrite(L7,HIGH);
+    Serial.println("Failed to read from DHT sensor!");
+
+  }
+}while(isnan(h) || isnan(t));
+
+Serial.println(t);
+Serial.println(h);
+
+digitalWrite(L1,LOW);
+//}
+///////////////////////////////////////////////////*/
+
+run=0;
+}
+
+
+
+
+
+
+//servo.write(pos);
+
 //  Serial.println(get_roll());
- if(bufMPU->numElements(bufMPU) >3){
+if(bufMPU->numElements(bufMPU) >3){
   Serial.print(3);
   Serial.print("            ");
 
@@ -174,65 +346,36 @@ void loop(void){
 
 if(countTemp >= 2000) {
   countTemp=0;
-  DHT11.acquire();
-  while (DHT11.acquiring())
-    ;
-  int result = DHT11.getStatus();
-  switch (result)
-  {
-    case IDDHTLIB_OK: 
-    //Serial.println("OK"); 
-    Serial.print("2");
-    Serial.print("            ");
-    Serial.print(DHT11.getHumidity(), 2);
-    Serial.print("            ");
-    Serial.println(DHT11.getCelsius(), 2);
-    break;
-    case IDDHTLIB_ERROR_CHECKSUM: 
-    Serial.println("Error\n\r\tChecksum error"); 
-    break;
-    case IDDHTLIB_ERROR_ISR_TIMEOUT: 
-    Serial.println("Error\n\r\tISR Time out error"); 
-    break;
-    case IDDHTLIB_ERROR_RESPONSE_TIMEOUT: 
-    Serial.println("Error\n\r\tResponse time out error"); 
-    break;
-    case IDDHTLIB_ERROR_DATA_TIMEOUT: 
-    Serial.println("Error\n\r\tData time out error"); 
-    break;
-    case IDDHTLIB_ERROR_ACQUIRING: 
-    Serial.println("Error\n\r\tAcquiring"); 
-    break;
-    case IDDHTLIB_ERROR_DELTA: 
-    Serial.println("Error\n\r\tDelta time to small"); 
-    break;
-    case IDDHTLIB_ERROR_NOTSTARTED: 
-    Serial.println("Error\n\r\tNot started"); 
-    break;
-    default: 
-    Serial.println("Unknown error"); 
-    break;
-  }
+//
+//
+
+
+
+
+
+
+
+}
 
 }
 
 /* if(bufDHT->numElements(bufDHT) >2){
-    Serial.println(2);
-    bufDHT->pull(bufDHT, &sendBYTE);    
-    //Serial.write(sendBYTE);
-    
-    Serial.println(sendBYTE);
-    bufDHT->pull(bufDHT, &sendBYTE);    
-    //Serial.write(sendBYTE);
-     
-    Serial.println(sendBYTE);
+Serial.println(2);
+bufDHT->pull(bufDHT, &sendBYTE);    
+//Serial.write(sendBYTE);
+
+Serial.println(sendBYTE);
+bufDHT->pull(bufDHT, &sendBYTE);    
+//Serial.write(sendBYTE);
+
+Serial.println(sendBYTE);
 
 
- }*/
+}*/
 
 
 
-}
+//}
 
 
 

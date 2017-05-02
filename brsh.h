@@ -1,16 +1,16 @@
 #include <Servo.h>
 #include "Arduino.h"
 
-class brsh{
 
-	public:
+void initBrush(int);
 
-	brsh(int);
+void turnOn(Servo);
 
-	void turnOn(void);
+void turnOff(Servo);
 
-	void turnOff(void);
+void defineVelocity(int, Servo);
 
-	void defineVelocity(int);
+void revive(int,Servo);
 
-};
+void detach(Servo);
+
