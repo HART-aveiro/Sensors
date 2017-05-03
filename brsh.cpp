@@ -1,3 +1,4 @@
+
 #include "brsh.h"
 #include <Servo.h>
 #include "Arduino.h"
@@ -6,35 +7,35 @@
 
 
 
-/*void initBrush(int pin){
-	Servo brushless; // inicializa o objecto servo como variavel global
+void initBrush(int pin,Servo brushless){
+	//Servo brushless; // inicializa o objecto servo como variavel global
 	// associa a variavel servo a um pin do arduino
 	brushless.attach(pin,1000,2000);
-}*/
+}
 
 
 void turnOn(Servo brushless){
 	//liga o brushless e aguarda até ser estavel
 	brushless.writeMicroseconds(0);
 	brushless.writeMicroseconds(1000);
-	delay(6000);
+	delay(5000);
 }
 
 void turnOff(Servo brushless){
 	//desliga o brushless e aguarda até estar estavel
 	brushless.writeMicroseconds(1000);
 	brushless.writeMicroseconds(0);
-	delay(6000);
+	delay(5000);
 }
 
-void defineVelocity(int percent,Servo brushless){
-	//dá uma velocidade e espera que estabilize
-	if (percent<1)
-		percent=1;
-	if (percent>100)
-		percent=100;
+void defineVelocity(int velocity,Servo brushless){
+	//dá uma velocidade e espera que estabilize, valor de percent entre 0 e 650
+	if (velocity<0)
+		velocity=0;
+	if (velocity>1000)
+		velocity=650;
 
-	int velocity=1100+0.75*percent;
+	velocity=1100+velocity; // soma 1100 à velocidade para ser enviado directamente para o PWM da função SERVO
 	brushless.writeMicroseconds(velocity);
 	//delay(4000);
 }
