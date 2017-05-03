@@ -1,6 +1,8 @@
 #include <RingBuf.h>
 
+//#include <MsTimer2.h>
 #include <TimerOne.h>
+
 #include "hartimu.h"
 #include <Wire.h>
 
@@ -22,6 +24,16 @@
 #define L7 36 ////ERROR/////////////////////////
 #define L8 37 ////OK////////////////////////////
 
+#define heatingTime 2 //2*baseTime
+#define readingTime 3 //3*readingTime
+#define baseTime 15000
+#define togglePIN 4
+#define readPIN A3
+unsigned int counterMQ7;
+char mark;
+char isReading;
+
+
 
 
 //DHT
@@ -41,7 +53,7 @@ float h = NAN,t = NAN;
 //PhotoDiode
 #define pinPhotoDiode 2
 //Servo
-#define pinServo 4
+#define pinServo 3
 //Brushless
 #define pinBrushless 6
 
@@ -71,7 +83,7 @@ RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 long lastTime, currentTime;
 
 //counter variables for interrupts
-int countMPU=0; //Counter for MPU
+int countMPU=-1; //Counter for MPU
 volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
 short temp;
@@ -117,6 +129,13 @@ void setup(void){
  //MPU6050 initialization//////////////////////
  initialize_imu();
  /////////////////////////////////////////////
+ //MQ7//////////////////////////////////
+ pinMode(togglePIN,OUTPUT);
+ digitalWrite(togglePIN,HIGH);
+  ///////////////////////////////////
+
+
+
 
  //Initialize servo and sendo to pos 60
  servo.attach(pinServo);
@@ -137,11 +156,14 @@ void setup(void){
 
 //Timer initialization///////////////////////////
 //Timer is used for interrupt
- Timer1.initialize(1000);
+ Timer1.initialize(2000);
  Timer1.attachInterrupt(getSensors);
   //interrupt every 1ms
- Timer1.start();
-
+ Timer1.start();//*/
+/*
+ MsTimer2::set(1, getSensors); // 500ms period
+  MsTimer2::start();
+//*/
  ////////////////////////////////////////////////
 
 
@@ -164,39 +186,47 @@ void changeAngle(){
   digitalWrite(L4,HIGH);
   lastTime=currentTime;
   currentTime=millis();
-  /*
-  Serial.println(currentTime-lastTime);
-  Serial.println(velocity);
+  if(currentTime-lastTime >100){
+/*
+    Serial.println(currentTime-lastTime);
+
+    Serial.println(velocity);
 //*/
-  if(currentTime-lastTime > 600 && currentTime-lastTime <700){
-    canDo=1;
-  }else if( currentTime-lastTime < 600){
-    velocity--;
+    if(currentTime-lastTime > 630 && currentTime-lastTime <680){
+      canDo=1;
+    }else if( currentTime-lastTime <= 630){
+      if (velocity == 0){
+        velocity=0;
+      }else{
+        velocity--;
+      }
+    //defineVelocity(velocity,brushless);
+      canDo=0;
+    }else if( currentTime-lastTime >= 680){
+      velocity++;
+
+      canDo=0;
+    }
     defineVelocity(velocity,brushless);
-    canDo=0;
-  }else if( currentTime-lastTime > 700){
-    velocity++;
-    defineVelocity(velocity,brushless);
-    canDo=0;
-  }
 
 
-  if(pos>=upAngle){
-    flag=0;
-  }
-  if(pos<=lowAngle){
-    flag=1;
-  }
+    if(pos>=upAngle){
+      flag=0;
+    }
+    if(pos<=lowAngle){
+      flag=1;
+    }
 
-  if(flag==1  && canDo==1){
-    canDo = 0;
-    pos++;
+    if(flag==1  && canDo==1){
+      canDo = 0;
+      pos++;
+    }
+    if(flag==0  && canDo==1){
+      canDo = 0;
+      pos--;
+    }
+    servo.write(pos);
   }
-  if(flag==0  && canDo==1){
-    canDo = 0;
-    pos--;
-  }
-  servo.write(pos);
   digitalWrite(L4,LOW);
 }
 
@@ -215,9 +245,15 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   }*/
 
 //MPU6050 data aquisition  
-  if(countMPU==4){
+  /*if (countMPU==3){
+
+    read_mpu_values();
+  }//*/
+
+  if(countMPU==2){
     countMPU=0;
 
+    
     read_mpu_values();
     compute_data();
 
@@ -229,6 +265,26 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     bufMPU->add(bufMPU, &temp);  
   }
 //end MPU6050 data aquisition
+  counterMQ7++;
+
+  if (counterMQ7 == baseTime){
+    mark++;
+    counterMQ7 = 0;
+  }
+  
+  if (mark == heatingTime && isReading == 0){
+    digitalWrite(togglePIN,LOW);
+    isReading = 1;
+    mark = 0;
+  }
+
+  if (mark == readingTime && isReading == 1){
+    digitalWrite(togglePIN,HIGH);
+    isReading = 0;
+    mark = 0;
+  }
+
+
 
 
 
@@ -244,6 +300,7 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 
 int run=1;
+float data =0;
 bool errorBrush = true;
 
 
@@ -330,7 +387,7 @@ void loop(void){
 //servo.write(pos);
 
 //  Serial.println(get_roll());
-  if(bufMPU->numElements(bufMPU) >3){
+ /* if(bufMPU->numElements(bufMPU) >3){
     Serial.print(3);
     Serial.print("            ");
 
@@ -352,7 +409,7 @@ void loop(void){
 //    Serial.write(sendSHORT.send2[0]);
 //    Serial.write(sendSHORT.send2[1]);
 
-  }
+  }//*/
 
   if(countTemp >= 2000) {
     countTemp=0;
@@ -366,7 +423,7 @@ void loop(void){
     digitalWrite(L1,LOW);
 
   }
-
+/*
   if(bufDHT->numElements(bufDHT) >2){
     Serial.println(2);
     bufDHT->pull(bufDHT, &sendBYTE);    
@@ -379,7 +436,18 @@ void loop(void){
     Serial.println(sendBYTE);
 
 
+  }//*/
+  if(countTemp%100){
+
+    data= (float) analogRead(readPIN)*5/1023;
+    Serial.println(data);
   }
+
+
+
+
+
+
 }//*/
 
 

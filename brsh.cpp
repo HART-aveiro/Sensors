@@ -32,8 +32,8 @@ void defineVelocity(int velocity,Servo brushless){
 	//dá uma velocidade e espera que estabilize, valor de percent entre 0 e 650
 	if (velocity<0)
 		velocity=0;
-	if (velocity>1000)
-		velocity=650;
+	if (velocity>100)
+		velocity=100;
 
 	velocity=1100+velocity; // soma 1100 à velocidade para ser enviado directamente para o PWM da função SERVO
 	brushless.writeMicroseconds(velocity);
