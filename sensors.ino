@@ -13,7 +13,13 @@
 
 #include "flamesensor.h"
 
+
+//#include <LIDARLite.h>
+
 #define DEBUG 1
+
+
+//LIDARLite myLidarLite;
 
 
 //Debug LEDs
@@ -80,6 +86,7 @@ int pos = lowAngle;
 
 
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
+//RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
 RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 RingBuf *bufFlame = RingBuf_new(sizeof(byte), 8);
 
@@ -92,7 +99,68 @@ volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
 short temp;
 byte temp2, sendBYTE, flameBYTE;
+/*
+int distCount=0;
+short dist;
 
+// Read distance. The approach is to poll the status register until the device goes
+// idle after finishing a measurement, send a new measurement command, then read the
+// previous distance data while it is performing the new command.
+int distanceFast(bool biasCorrection){
+  interrupts();
+  byte isBusy = 1;
+  int distance;
+  int loopCount;
+
+  // Poll busy bit in status register until device is idle
+  while(isBusy)
+  {
+    // Read status register
+    Wire.beginTransmission(LIDARLITE_ADDR_DEFAULT);
+    Wire.write(0x01);
+    Wire.endTransmission();
+    Wire.requestFrom(LIDARLITE_ADDR_DEFAULT, 1);
+    isBusy = Wire.read();
+    isBusy = bitRead(isBusy,0); // Take LSB of status register, busy bit
+
+    loopCount++; // Increment loop counter
+    // Stop status register polling if stuck in loop
+    if(loopCount > 9999)
+    {
+      break;
+    }
+  }
+
+  // Send measurement command
+  Wire.beginTransmission(LIDARLITE_ADDR_DEFAULT);
+  Wire.write(0X00); // Prepare write to register 0x00
+  if(biasCorrection == true)
+  {
+    Wire.write(0X04); // Perform measurement with receiver bias correction
+  }
+  else
+  {
+    Wire.write(0X03); // Perform measurement without receiver bias correction
+  }
+  Wire.endTransmission();
+
+  // Immediately read previous distance measurement data. This is valid until the next measurement finishes.
+  // The I2C transaction finishes before new distance measurement data is acquired.
+  // Prepare 2 byte read from registers 0x0f and 0x10
+  Wire.beginTransmission(LIDARLITE_ADDR_DEFAULT);
+  Wire.write(0x8f);
+  Wire.endTransmission();
+
+  // Perform the read and repack the 2 bytes into 16-bit word
+  Wire.requestFrom(LIDARLITE_ADDR_DEFAULT, 2);
+  distance = Wire.read();
+  distance <<= 8;
+  distance |= Wire.read();
+
+  // Return the measured distance
+  return distance;
+}
+//*/
 
 
 void setup(void){
@@ -175,9 +243,47 @@ void setup(void){
  attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
  ///////////////////////////////////////////////
 
+/*
+/*
+    begin(int configuration, bool fasti2c, char lidarliteAddress)
+
+    Starts the sensor and I2C.
+
+    Parameters
+    ----------------------------------------------------------------------------
+    configuration: Default 0. Selects one of several preset configurations.
+    fasti2c: Default 100 kHz. I2C base frequency.
+      If true I2C frequency is set to 400kHz.
+    lidarliteAddress: Default 0x62. Fill in new address here if changed. See
+      operating manual for instructions.
+  //*/
+ // myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
+
+  /*
+    configure(int configuration, char lidarliteAddress)
+
+    Selects one of several preset configurations.
+
+    Parameters
+    ----------------------------------------------------------------------------
+    configuration:  Default 0.
+      0: Default mode, balanced performance.
+      1: Short range, high speed. Uses 0x1d maximum acquisition count.
+      2: Default range, higher speed short range. Turns on quick termination
+          detection for faster measurements at short range (with decreased
+          accuracy)
+      3: Maximum range. Uses 0xff maximum acquisition count.
+      4: High sensitivity detection. Overrides default valid measurement detection
+          algorithm, and uses a threshold value for high sensitivity and noise.
+      5: Low sensitivity detection. Overrides default valid measurement detection
+          algorithm, and uses a threshold value for low sensitivity and noise.
+    lidarliteAddress: Default 0x62. Fill in new address here if changed. See
+      operating manual for instructions.
+  */
+ // myLidarLite.configure(0); // Change this number to try out alternate configurations
 
 
-
+//*/
 
 
 
@@ -252,6 +358,17 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   /*if (countMPU==3){
 
     read_mpu_values();
+  }//*/
+  /*if(countMPU==1){
+    if(distCount==100){
+      //dist = (short) myLidarLite.distance(false);
+      dist = (short) distanceFast(false);
+    }else{
+      //dist = (short) myLidarLite.distance();
+      dist = (short) distanceFast(false);
+    }
+    
+    bufLIDAR->add(bufLIDAR, &dist);
   }//*/
 
   if(countMPU==2){
@@ -447,7 +564,7 @@ void loop(void){
    // Serial.println(data);
 
   }
-
+/*
   if(countTemp % 500 == 0) {
     s1 = getFS1values();
     s2 = getFS2values();
@@ -456,6 +573,32 @@ void loop(void){
     Serial.println(flameBYTE+'a');
     bufFlame->add(bufFlame,&flameBYTE);
   }
+
+
+
+  if(bufLIDAR->numElements(bufLIDAR) >181){
+    Serial.print(3);
+    Serial.print("            ");
+
+
+    bufMPU->pull(bufLIDAR, &sendSHORT);
+    Serial.print(sendSHORT.send1);
+
+    Serial.print("            ");
+
+    bufMPU->pull(bufLIDAR, &sendSHORT);
+    Serial.print(sendSHORT.send1);
+
+    Serial.print("            ");
+
+    bufMPU->pull(bufLIDAR, &sendSHORT);
+    Serial.println(sendSHORT.send1 );
+
+
+//    Serial.write(sendSHORT.send2[0]);
+//    Serial.write(sendSHORT.send2[1]);
+
+  }//*/
 
 
 
