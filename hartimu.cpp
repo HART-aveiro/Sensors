@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include "hartimu.h"
+#include "SpeedTrig.h"
 
   long AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ,GyXant,GyYant,GyZant;
   long gyro_x_calc,gyro_y_calc,gyro_z_calc;
@@ -76,14 +77,14 @@
     angle_pitch += GyY*0.004/65.5;
     angle_yaw += GyZ*0.004/65.5;
 
-    float sinGyZ =sin(GyZ*0.000001066);
+    float sinGyZ =SpeedTrig.sin(GyZ*0.000001066)*0.01745;
     angle_roll -= angle_pitch * sinGyZ;
     angle_pitch += angle_roll * sinGyZ;
 
     //accel data treatment
     total_vect_acc = sqrt((AcX*AcX) + (AcY*AcY) + (AcZ*AcZ));
-    angle_pitch_acc = asin((float)AcX/total_vect_acc)*-57.296;//180/pi = 57.296
-    angle_roll_acc = asin((float)AcY/total_vect_acc)*57.296;//180/pi = 57.296
+    angle_pitch_acc = 90-SpeedTrig.acos((float)AcX/total_vect_acc);//180/pi = 57.296
+    angle_roll_acc = 90-SpeedTrig.acos((float)AcY/total_vect_acc);//180/pi = 57.296
 
     angle_roll_acc -= -0.7;
     angle_pitch_acc -= -0.8;
