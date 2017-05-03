@@ -1,0 +1,6 @@
+Thum	KEYWORD1
+readtemp	KEYWORD3
+readhum	KEYWORD6
+set	KEYWORD3
+tprint	KEYWORD3
+hprint	KEYWORD3

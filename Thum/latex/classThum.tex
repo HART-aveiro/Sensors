@@ -1,0 +1,107 @@
+\hypertarget{classThum}{}\section{Thum Class Reference}
+\label{classThum}\index{Thum@{Thum}}
+
+
+{\ttfamily \#include $<$Thum.\+h$>$}
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classThum_a1fb4ba16e8885d93055d147526c5ebe0}{set} ()
+\item 
+float \hyperlink{classThum_a3072f0c2925269b59d9916eb6aef0d98}{readtemp} ()
+\item 
+float \hyperlink{classThum_a218931e6d2aeeaf99ed70a2f77d77d26}{readhum} ()
+\item 
+void \hyperlink{classThum_a94e542caaa8a711ecf6ab039fdad7e20}{hprint} (float hum)
+\item 
+void \hyperlink{classThum_ae7d13ae1f7676e258e1b23adacf91ddd}{tprint} (float temp)
+\end{DoxyCompactItemize}
+
+
+\subsection{Member Function Documentation}
+\index{Thum@{Thum}!hprint@{hprint}}
+\index{hprint@{hprint}!Thum@{Thum}}
+\subsubsection[{\texorpdfstring{hprint(float hum)}{hprint(float hum)}}]{\setlength{\rightskip}{0pt plus 5cm}void Thum\+::hprint (
+\begin{DoxyParamCaption}
+\item[{float}]{hum}
+\end{DoxyParamCaption}
+)}\hypertarget{classThum_a94e542caaa8a711ecf6ab039fdad7e20}{}\label{classThum_a94e542caaa8a711ecf6ab039fdad7e20}
+Method whose function is to print the humidity value trough serial communication 
+\begin{DoxyCode}
+44 \{
+45   Serial.print(\textcolor{stringliteral}{"Humidity: "});
+46   Serial.print(hum);
+47   Serial.print(\textcolor{stringliteral}{" *percent \(\backslash\)n"});
+48 \}\textcolor{comment}{// end hprint}
+\end{DoxyCode}
+\index{Thum@{Thum}!readhum@{readhum}}
+\index{readhum@{readhum}!Thum@{Thum}}
+\subsubsection[{\texorpdfstring{readhum()}{readhum()}}]{\setlength{\rightskip}{0pt plus 5cm}float Thum\+::readhum (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classThum_a218931e6d2aeeaf99ed70a2f77d77d26}{}\label{classThum_a218931e6d2aeeaf99ed70a2f77d77d26}
+Function that enables the humidity reading 
+\begin{DoxyCode}
+19 \{
+20   \textcolor{keywordtype}{float} humidity = \hyperlink{Thum_8cpp_ad7a1df263f6f823242a112ec11297434}{dht}.readHumidity();                                  \textcolor{comment}{// Read humidity in %}
+21   \textcolor{keywordflow}{while} (isnan(humidity))\{
+22     Serial.println(\textcolor{stringliteral}{"Error during humidity acquisition. Retrying!"});     \textcolor{comment}{// Checks if humidity read failed
+       and exit early.}
+23   \}
+24   \textcolor{keywordflow}{return} humidity;                                                      
+25 \}\textcolor{comment}{// end readhumidity}
+\end{DoxyCode}
+\index{Thum@{Thum}!readtemp@{readtemp}}
+\index{readtemp@{readtemp}!Thum@{Thum}}
+\subsubsection[{\texorpdfstring{readtemp()}{readtemp()}}]{\setlength{\rightskip}{0pt plus 5cm}float Thum\+::readtemp (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classThum_a3072f0c2925269b59d9916eb6aef0d98}{}\label{classThum_a3072f0c2925269b59d9916eb6aef0d98}
+Function that enables the temperature reading 
+\begin{DoxyCode}
+28 \{
+29   \textcolor{keywordtype}{float} temperature = \hyperlink{Thum_8cpp_ad7a1df263f6f823242a112ec11297434}{dht}.readTemperature();                            \textcolor{comment}{// Read temperature as Celsius}
+30   \textcolor{keywordflow}{while}(isnan(temperature))\{
+31     Serial.println(\textcolor{stringliteral}{"Error during temperature acquisition. Retrying!"});  \textcolor{comment}{// Checks if temperature read
+       failed and exit early.}
+32   \}
+33   \textcolor{keywordflow}{return} temperature;                                                   
+34 \}\textcolor{comment}{// end readtemp}
+\end{DoxyCode}
+\index{Thum@{Thum}!set@{set}}
+\index{set@{set}!Thum@{Thum}}
+\subsubsection[{\texorpdfstring{set()}{set()}}]{\setlength{\rightskip}{0pt plus 5cm}void Thum\+::set (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{classThum_a1fb4ba16e8885d93055d147526c5ebe0}{}\label{classThum_a1fb4ba16e8885d93055d147526c5ebe0}
+Function that sets up the D\+HT sensor 
+\begin{DoxyCode}
+14   \{
+15     \hyperlink{Thum_8cpp_ad7a1df263f6f823242a112ec11297434}{dht}.begin();
+16   \}
+\end{DoxyCode}
+\index{Thum@{Thum}!tprint@{tprint}}
+\index{tprint@{tprint}!Thum@{Thum}}
+\subsubsection[{\texorpdfstring{tprint(float temp)}{tprint(float temp)}}]{\setlength{\rightskip}{0pt plus 5cm}void Thum\+::tprint (
+\begin{DoxyParamCaption}
+\item[{float}]{temp}
+\end{DoxyParamCaption}
+)}\hypertarget{classThum_ae7d13ae1f7676e258e1b23adacf91ddd}{}\label{classThum_ae7d13ae1f7676e258e1b23adacf91ddd}
+Method whose function is to print the temperature value trough serial communication 
+\begin{DoxyCode}
+37 \{
+38   Serial.print(\textcolor{stringliteral}{"Temperature: "});
+39   Serial.print(temp);
+40   Serial.print(\textcolor{stringliteral}{" *C \(\backslash\)n"});
+41 \}\textcolor{comment}{// end tprint}
+\end{DoxyCode}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{Thum_8h}{Thum.\+h}\item 
+\hyperlink{Thum_8cpp}{Thum.\+cpp}\end{DoxyCompactItemize}
