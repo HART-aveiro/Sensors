@@ -1,0 +1,6 @@
+flamesensor	KEYWORD1
+ema_filter	KEYWORD2
+getFS1values	KEYWORD2
+getFS2values	KEYWORD2
+getFS3values	KEYWORD2
+flameposition	KEYWORD2
