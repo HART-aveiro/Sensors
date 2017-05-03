@@ -1,4 +1,4 @@
-''/*Flame sensor library source file - written by Micael Monteiro
+/*Flame sensor library source file - written by Micael Monteiro
 Functionalities: Reads analog values from sensors, converts, filters using Exponential Moving Average (EMA) algorithm and compares to see which one is closer to flame */
 
 
@@ -77,14 +77,32 @@ int getFS3values(void){                                                         
 
 char flameposition(int sensor1, int sensor2, int sensor3){
  char info = 0;                                                               //byte to be conveyed to platform
+
+
+
  if ((sensor1 > sensor2) && (sensor1 > sensor3))                              //closer to sensor 1
+    info = 2;                                                                      //info=00000001
+else if ((sensor2 > sensor1) && (sensor2 > sensor3))                         //closer to sensor 2
+    info = 8;                                                                      //info=00001000
+else if ((sensor3 > sensor1) && (sensor3 > sensor2))                         //closer to sensor 3
+    info = 32;                                                                 //info=10000000
+else if ((sensor1>sensor3 && sensor2>sensor3) && (abs(sensor1-sensor2)<5)      //between sensor 1 and 2
+ info = 4;                                                                      //info=00000010
+else if ((sensor1>sensor2 && sensor3>sensor2) && (abs(sensor1-sensor2)<5)       //between sensor 2 and 3
+ info = 16;                                                                  //info=00100000
+
+
+
+
+
+/* if ((sensor1 > sensor2) && (sensor1 > sensor3))                              //closer to sensor 1
    info = 1;                                                                    //info=00000001
  else if ((sensor2 > sensor1) && (sensor2 > sensor3))                         //closer to sensor 2
    info = 2;                                                                    //info=00000010
  else if ((sensor3 > sensor1) && (sensor3 > sensor2))                         //closer to sensor 3
    info = 4;                                                                    //info=00000100
  else if (sensor1 == 0 && sensor2 == 0 && sensor3 == 0)
-  info=0;
+  info=0;//*/
   //Serial.println("No flame");
   /*
 if(sensor1 !=0 || sensor2 != 0 || sensor3 != 0){                            // all sensors with values above 500
@@ -93,4 +111,3 @@ if(sensor1 !=0 || sensor2 != 0 || sensor3 != 0){                            // a
   }//*/
   return info;
 }//end flameposition;
-''

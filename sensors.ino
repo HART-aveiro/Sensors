@@ -11,6 +11,8 @@
 #include <Servo.h> 
 #include "brsh.h"
 
+#include "flamesensor.h"
+
 #define DEBUG 1
 
 
@@ -32,6 +34,7 @@
 unsigned int counterMQ7;
 char mark;
 char isReading;
+
 
 
 
@@ -78,6 +81,7 @@ int pos = lowAngle;
 
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
 RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
+RingBuf *bufFlame = RingBuf_new(sizeof(byte), 8);
 
 //time variables for photodiode interrupt
 long lastTime, currentTime;
@@ -87,7 +91,7 @@ int countMPU=-1; //Counter for MPU
 volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
 short temp;
-byte temp2, sendBYTE;
+byte temp2, sendBYTE, flameBYTE;
 
 
 
@@ -299,7 +303,7 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 
 
-int run=1;
+int run=1, s1,s2, s3;
 float data =0;
 bool errorBrush = true;
 
@@ -411,7 +415,7 @@ void loop(void){
 
   }//*/
 
-  if(countTemp >= 2000) {
+  if(countTemp >= 1000) {
     countTemp=0;
 //
     digitalWrite(L1,HIGH);
@@ -439,9 +443,21 @@ void loop(void){
   }//*/
   if(countTemp%100){
 
-    data= (float) analogRead(readPIN)*5/1023;
-    Serial.println(data);
+    data= /*(float)*/ analogRead(readPIN)*5.0/1023;
+   // Serial.println(data);
+
   }
+
+  if(countTemp % 500 == 0) {
+    s1 = getFS1values();
+    s2 = getFS2values();
+    s3 = getFS3values();
+    flameBYTE=(byte) flameposition(s1,s2,s3);
+    Serial.println(flameBYTE+'a');
+    bufFlame->add(bufFlame,&flameBYTE);
+  }
+
+
 
 
 
