@@ -14,7 +14,7 @@
 #include "flamesensor.h"
 
 
-//#include <LIDARLite.h>
+#include <LIDARLite.h>
 
 #define DEBUG 1
 
@@ -86,7 +86,7 @@ int pos = lowAngle;
 
 
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
-//RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
+RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
 RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 RingBuf *bufFlame = RingBuf_new(sizeof(byte), 8);
 
@@ -99,7 +99,9 @@ volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
 short temp;
 byte temp2, sendBYTE, flameBYTE;
-/*
+
+
+
 int distCount=0;
 short dist;
 
@@ -359,7 +361,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
     read_mpu_values();
   }//*/
-  /*if(countMPU==1){
+  if(countMPU==1){
     if(distCount==100){
       //dist = (short) myLidarLite.distance(false);
       dist = (short) distanceFast(false);
@@ -572,12 +574,13 @@ void loop(void){
     flameBYTE=(byte) flameposition(s1,s2,s3);
     Serial.println(flameBYTE+'a');
     bufFlame->add(bufFlame,&flameBYTE);
-  }
+  }*/
 
 
 
   if(bufLIDAR->numElements(bufLIDAR) >181){
     Serial.print(3);
+    
     Serial.print("            ");
 
 
