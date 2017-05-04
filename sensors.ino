@@ -1,6 +1,6 @@
 #include <RingBuf.h>
 
-//#include <MsTimer2.h>
+#include <TimerThree.h>
 #include <TimerOne.h>
 
 #include "hartimu.h"
@@ -8,19 +8,18 @@
 
 #include <DHT.h>
 
-#include <Servo.h> 
+#include <PWMServo.h> 
 #include "brsh.h"
 
 #include "flamesensor.h"
-
 
 #include <LIDARLite.h>
 
 #define DEBUG 1
 
 
-//LIDARLite myLidarLite;
-
+LIDARLite myLidarLite;
+//
 
 //Debug LEDs
 #define L1 30 //DHT
@@ -62,9 +61,9 @@ float h = NAN,t = NAN;
 //PhotoDiode
 #define pinPhotoDiode 2
 //Servo
-#define pinServo 3
+#define pinServo 11
 //Brushless
-#define pinBrushless 6
+#define pinBrushless 12
 
 #define lowAngle 60
 #define upAngle 140
@@ -72,10 +71,10 @@ float h = NAN,t = NAN;
 
 
 
-Servo servo;
+PWMServo servo;
 
 //initBrush(pinBrushless);
-Servo brushless;
+PWMServo brushless;
 int velocity=10;
 
 const int led = 13;  // the pin with a LED
@@ -218,26 +217,20 @@ void setup(void){
 
  //initialize brushless/////////////////////////
  //set speed to 10
- //brsh brush(pinBrushless);
 
  brushless.attach(pinBrushless,1000,2000);
- //brush.turnOn();
  turnOn(brushless);
-
- //brush.defineVelocity(10);
  defineVelocity(velocity,brushless);
  ///////////////////////////////////////////////
 
 //Timer initialization///////////////////////////
 //Timer is used for interrupt
- Timer1.initialize(2000);
- Timer1.attachInterrupt(getSensors);
+
+ Timer3.initialize(1000);
+ Timer3.attachInterrupt(getSensors);
   //interrupt every 1ms
- Timer1.start();//*/
-/*
- MsTimer2::set(1, getSensors); // 500ms period
-  MsTimer2::start();
-//*/
+ Timer3.start();//*/
+ 
  ////////////////////////////////////////////////
 
 
@@ -259,7 +252,7 @@ void setup(void){
     lidarliteAddress: Default 0x62. Fill in new address here if changed. See
       operating manual for instructions.
   //*/
- // myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
+  myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
 
   /*
     configure(int configuration, char lidarliteAddress)
@@ -287,6 +280,9 @@ void setup(void){
 
 //*/
 
+ myLidarLite.write(0x02, 0x0d); // Maximum acquisition count of 0x0d. (default is 0x80)
+  myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
+  myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
 
 
 }/////////////////////////////////////end setup/
@@ -349,19 +345,11 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 //increment time variables
   digitalWrite(L2,HIGH);
 
-
   countMPU+=1; 
   countTemp+=1;
-  /*if(countTemp%60==0){
-    canDo=1;
-  }*/
 
 //MPU6050 data aquisition  
-  /*if (countMPU==3){
-
-    read_mpu_values();
-  }//*/
-  if(countMPU==1){
+  if(countMPU==2){
     if(distCount==100){
       //dist = (short) myLidarLite.distance(false);
       dist = (short) distanceFast(false);
@@ -371,12 +359,12 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     }
     
     bufLIDAR->add(bufLIDAR, &dist);
-  }//*/
+  }
 
-  if(countMPU==2){
+  if(countMPU==4){
     countMPU=0;
 
-    
+
     read_mpu_values();
     compute_data();
 
@@ -388,24 +376,24 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     bufMPU->add(bufMPU, &temp);  
   }
 //end MPU6050 data aquisition
-  counterMQ7++;
+    counterMQ7++;
 
-  if (counterMQ7 == baseTime){
-    mark++;
-    counterMQ7 = 0;
-  }
-  
-  if (mark == heatingTime && isReading == 0){
-    digitalWrite(togglePIN,LOW);
-    isReading = 1;
-    mark = 0;
-  }
+    if (counterMQ7 == baseTime){
+      mark++;
+      counterMQ7 = 0;
+    }
 
-  if (mark == readingTime && isReading == 1){
-    digitalWrite(togglePIN,HIGH);
-    isReading = 0;
-    mark = 0;
-  }
+    if (mark == heatingTime && isReading == 0){
+      digitalWrite(togglePIN,LOW);
+      isReading = 1;
+      mark = 0;
+    }
+
+    if (mark == readingTime && isReading == 1){
+      digitalWrite(togglePIN,HIGH);
+      isReading = 0;
+      mark = 0;
+    }
 
 
 
@@ -422,13 +410,13 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 
 
-int run=1, s1,s2, s3;
+int run=1, s1,s2, s3,i;
 float data =0;
 bool errorBrush = true;
 
 
 
-void loop(void){
+void loop(void){/*
   if(run==1){
     ////////////////////////////////////////////////
 ////////////////////////////////////////////////
@@ -472,7 +460,7 @@ void loop(void){
   digitalWrite(L3,LOW);
   //*/
 
-
+/*
 //DHT11 test //////////////////////////////////
  //if (DEBUG){
     digitalWrite(L1,HIGH);
@@ -498,10 +486,10 @@ void loop(void){
     digitalWrite(L1,LOW);
 //}
 ///////////////////////////////////////////////////*/
-
+/*
     run=0;
   }
-
+//*/
 
 
 
@@ -534,7 +522,7 @@ void loop(void){
 
   }//*/
 
-  if(countTemp >= 1000) {
+  /*if(countTemp >= 1000) {
     countTemp=0;
 //
     digitalWrite(L1,HIGH);
@@ -545,7 +533,7 @@ void loop(void){
     bufDHT->add(bufDHT,&temp2);
     digitalWrite(L1,LOW);
 
-  }
+  }//*/
 /*
   if(bufDHT->numElements(bufDHT) >2){
     Serial.println(2);
@@ -560,12 +548,16 @@ void loop(void){
 
 
   }//*/
+/*
   if(countTemp%100){
+    //Timer3.restart();
 
-    data= /*(float)*/ analogRead(readPIN)*5.0/1023;
+    data= analogRead(readPIN)*5.0/1023;
    // Serial.println(data);
 
-  }
+  }//*/
+
+
 /*
   if(countTemp % 500 == 0) {
     s1 = getFS1values();
@@ -578,30 +570,26 @@ void loop(void){
 
 
 
-  if(bufLIDAR->numElements(bufLIDAR) >181){
-    Serial.print(3);
-    
-    Serial.print("            ");
+if(bufLIDAR->numElements(bufLIDAR) >181){
+  digitalWrite(L3,HIGH);
+  //Serial.write(3);
 
+    //Serial.print("            ");
 
+  
+  for(i =180; i >= 0; i--){
     bufMPU->pull(bufLIDAR, &sendSHORT);
-    Serial.print(sendSHORT.send1);
+    //if(Serial.availableForWrite()){
+     //Serial.write(sendSHORT.send1);
 
-    Serial.print("            ");
+      Serial.write(sendSHORT.send2[1]);  
+      Serial.write(sendSHORT.send2[0]);
 
-    bufMPU->pull(bufLIDAR, &sendSHORT);
-    Serial.print(sendSHORT.send1);
+    //}
+  }
 
-    Serial.print("            ");
-
-    bufMPU->pull(bufLIDAR, &sendSHORT);
-    Serial.println(sendSHORT.send1 );
-
-
-//    Serial.write(sendSHORT.send2[0]);
-//    Serial.write(sendSHORT.send2[1]);
-
-  }//*/
+  digitalWrite(L3,LOW);
+}//*/
 
 
 
