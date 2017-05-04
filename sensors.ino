@@ -40,6 +40,7 @@
 unsigned int counterMQ7;
 char mark;
 char isReading;
+char flagFlames, flagDHT;
 
 
 
@@ -69,6 +70,11 @@ float h = NAN,t = NAN;
 #define lowAngle 60
 #define upAngle 140
 
+#define idLIDAR 0x41
+#define idDHT 0x42
+#define idMPU 0x43
+#define idMQ7 0x44
+#define idFlames 0x45
 
 
 
@@ -89,6 +95,7 @@ RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
 RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
 RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 RingBuf *bufFlame = RingBuf_new(sizeof(byte), 8);
+RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
 
 //time variables for photodiode interrupt
 long lastTime, currentTime;
@@ -164,7 +171,6 @@ int distanceFast(bool biasCorrection){
 }
 //*/
 
-
 void setup(void){
   if(DEBUG){
     //Define debug LEDpins as output///////////
@@ -194,7 +200,6 @@ void setup(void){
  }
  
  //////////////////////////////////////////////
-
  //DHT/////////////////////////////////////////
  dht.begin();
 
@@ -203,28 +208,20 @@ void setup(void){
  //MPU6050 initialization//////////////////////
  initialize_imu();
  /////////////////////////////////////////////
+ 
  //MQ7//////////////////////////////////
  pinMode(togglePIN,OUTPUT);
  digitalWrite(togglePIN,HIGH);
   ///////////////////////////////////
-
-
-
-
+  
  //Initialize servo and sendo to pos 60
  servo.attach(pinServo);
  servo.write(pos);
  ////////////////////////////////////////////////
 
- //initialize brushless/////////////////////////
- //set speed to 10
- //brsh brush(pinBrushless);
-
+ //initialize brushless///////////////////////
  brushless.attach(pinBrushless,1000,2000);
- //brush.turnOn();
  turnOn(brushless);
-
- //brush.defineVelocity(10);
  defineVelocity(velocity,brushless);
  ///////////////////////////////////////////////
 
@@ -234,6 +231,7 @@ void setup(void){
  Timer1.attachInterrupt(getSensors);
   //interrupt every 1ms
  Timer1.start();//*/
+ 
 /*
  MsTimer2::set(1, getSensors); // 500ms period
   MsTimer2::start();
@@ -343,8 +341,6 @@ void changeAngle(){
 }
 
 
-
-
 void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
 //increment time variables
   digitalWrite(L2,HIGH);
@@ -355,13 +351,8 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   /*if(countTemp%60==0){
     canDo=1;
   }*/
-
-//MPU6050 data aquisition  
-  /*if (countMPU==3){
-
-    read_mpu_values();
-  }//*/
-  if(countMPU==1){
+  
+/*  if(countMPU==1){
     if(distCount==100){
       //dist = (short) myLidarLite.distance(false);
       dist = (short) distanceFast(false);
@@ -369,10 +360,19 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
       //dist = (short) myLidarLite.distance();
       dist = (short) distanceFast(false);
     }
-    
+
+    //pr
     bufLIDAR->add(bufLIDAR, &dist);
   }//*/
 
+
+
+
+
+
+
+
+  //MPU6050 data aquisition  
   if(countMPU==2){
     countMPU=0;
 
@@ -387,9 +387,12 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     temp= (short) get_pitch()*10;
     bufMPU->add(bufMPU, &temp);  
   }
-//end MPU6050 data aquisition
-  counterMQ7++;
+  //end MPU6050 data aquisition
 
+
+  
+  // MQ7 data aquisition
+  counterMQ7++;
   if (counterMQ7 == baseTime){
     mark++;
     counterMQ7 = 0;
@@ -406,9 +409,19 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     isReading = 0;
     mark = 0;
   }
+  // end MQ7 data aquisition
 
 
 
+  // LER valores DHT no loop
+  if(countTemp == 1000){
+    flagDHT=1;
+  }
+
+  // LER valores flame no loop
+  if(countTemp % 500 == 0){
+    flagFlames=1;
+  }
 
 
   digitalWrite(L2,LOW);
@@ -421,10 +434,14 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 }sendSHORT;
 
 
+////// inicializações para testes manhosos do Gradim
 
 int run=1, s1,s2, s3;
 float data =0;
 bool errorBrush = true;
+
+////// fim das initializações para testes manhosos do Gradim
+
 
 
 
@@ -474,7 +491,7 @@ void loop(void){
 
 
 //DHT11 test //////////////////////////////////
- //if (DEBUG){
+ /*//if (DEBUG){
     digitalWrite(L1,HIGH);
     do{
 
@@ -497,45 +514,27 @@ void loop(void){
 
     digitalWrite(L1,LOW);
 //}
-///////////////////////////////////////////////////*/
+//////////////////////////////////////////////////*/
 
     run=0;
-  }
-
-
-
-
+  }//*/
 
 
 //servo.write(pos);
 
-//  Serial.println(get_roll());
- /* if(bufMPU->numElements(bufMPU) >3){
-    Serial.print(3);
-    Serial.print("            ");
 
 
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.print(sendSHORT.send1);
-
-    Serial.print("            ");
-
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.print(sendSHORT.send1);
-
-    Serial.print("            ");
-
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.println(sendSHORT.send1 );
 
 
-//    Serial.write(sendSHORT.send2[0]);
-//    Serial.write(sendSHORT.send2[1]);
 
-  }//*/
+///////////////////////////////////////////////////////////////////////////////
+// FUNCOES NO LOOP
 
-  if(countTemp >= 1000) {
+// DHT funtion
+  if(flagDHT==1) {
+    flagDHT=0;
     countTemp=0;
+    
 //
     digitalWrite(L1,HIGH);
     temp2 =(byte) dht.readHumidity();
@@ -544,67 +543,106 @@ void loop(void){
     temp2 =(byte) dht.readTemperature();
     bufDHT->add(bufDHT,&temp2);
     digitalWrite(L1,LOW);
-
   }
-/*
-  if(bufDHT->numElements(bufDHT) >2){
-    Serial.println(2);
-    bufDHT->pull(bufDHT, &sendBYTE);    
-//Serial.write(sendBYTE);
 
-    Serial.println(sendBYTE);
-    bufDHT->pull(bufDHT, &sendBYTE);    
-//Serial.write(sendBYTE);
+// MQ7 leitura
+  if(isReading == 1 && mark == 2){
+    
+   temp2= (byte) analogRead(readPIN)*0.48876; // analogRead(readPIN)*5.0/1024*10;
+   bufMQ7->add(bufMQ7,&temp2);
+   
+   // Serial.println(data);
+   //add to bufMQ7
+  }
 
-    Serial.println(sendBYTE);
 
+
+////////////////////////////////////////////////////////////////////////////////
+
+// ENVIAR DADOS
+
+  //MPU
+  if(bufMPU->numElements(bufMPU) >3){
+    Serial.print(idMPU);
+
+    bufMPU->pull(bufMPU, &sendSHORT);
+    //Serial.print(sendSHORT.send1);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
+    
+    bufMPU->pull(bufMPU, &sendSHORT);
+    //Serial.print(sendSHORT.send1);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
+    
+    bufMPU->pull(bufMPU, &sendSHORT);
+    //Serial.println(sendSHORT.send1);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
 
   }//*/
-  if(countTemp%100){
 
-    data= /*(float)*/ analogRead(readPIN)*5.0/1023;
-   // Serial.println(data);
+  // DHT
+  if(bufDHT->numElements(bufDHT) >2){
+    Serial.write(idDHT);
+    bufDHT->pull(bufDHT, &sendBYTE);    
+    Serial.write(sendBYTE);
 
-  }
-/*
-  if(countTemp % 500 == 0) {
+    //Serial.println(sendBYTE);
+    bufDHT->pull(bufDHT, &sendBYTE);    
+    Serial.write(sendBYTE);
+
+    //Serial.println(sendBYTE);
+  }//*/
+
+
+
+  // MQ7
+   if(bufMQ7->numElements(bufMQ7) >2){
+    Serial.write(idMQ7);
+    
+    bufMQ7->pull(bufMQ7, &sendBYTE);   
+    //Serial.println(sendBYTE); 
+    Serial.write(sendBYTE);
+    
+  }//*/
+
+
+  // Flames
+  if(flagFlames==1) {
+    flagFlames=0;
     s1 = getFS1values();
     s2 = getFS2values();
     s3 = getFS3values();
     flameBYTE=(byte) flameposition(s1,s2,s3);
-    Serial.println(flameBYTE+'a');
+    //Serial.println(flameBYTE+'a');
     bufFlame->add(bufFlame,&flameBYTE);
-  }*/
-
-
-
-  if(bufLIDAR->numElements(bufLIDAR) >181){
-    Serial.print(3);
     
-    Serial.print("            ");
+  }//*/
+
+
+  // LIDAR
+  if(bufLIDAR->numElements(bufLIDAR) >181){
+    //Serial.print(3);
+    Serial.write(idLIDAR);
+    
+    bufMPU->pull(bufLIDAR, &sendSHORT);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
+
+    bufMPU->pull(bufLIDAR, &sendSHORT);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
 
 
     bufMPU->pull(bufLIDAR, &sendSHORT);
-    Serial.print(sendSHORT.send1);
-
-    Serial.print("            ");
-
-    bufMPU->pull(bufLIDAR, &sendSHORT);
-    Serial.print(sendSHORT.send1);
-
-    Serial.print("            ");
-
-    bufMPU->pull(bufLIDAR, &sendSHORT);
-    Serial.println(sendSHORT.send1 );
-
-
-//    Serial.write(sendSHORT.send2[0]);
-//    Serial.write(sendSHORT.send2[1]);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
 
   }//*/
 
 
-
+//////////////////////////////////////////////////////////////////////////
 
 
 
