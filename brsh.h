@@ -1,16 +1,16 @@
-#include <Servo.h>
+#include <PWMServo.h>
 #include "Arduino.h"
 
 
 void initBrush(int);
 
-void turnOn(Servo);
+void turnOn(PWMServo);
 
-void turnOff(Servo);
+void turnOff(PWMServo);
 
-void defineVelocity(int, Servo);
+void defineVelocity(int, PWMServo);
 
-void revive(int,Servo);
+//void revive(int,Servo);
 
-void detach(Servo);
+void detach(PWMServo);
 

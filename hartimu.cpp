@@ -9,7 +9,7 @@
   float total_vect_acc,angle_pitch_acc,angle_roll_acc;
 
   void start_mpu_6050(){
-   // Wire.setClock(400000L);
+    Wire.setClock(400000L);
 
     
     //Activate the MPU-6050

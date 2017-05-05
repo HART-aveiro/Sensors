@@ -86,9 +86,9 @@ else if ((sensor2 > sensor1) && (sensor2 > sensor3))                         //c
     info = 8;                                                                      //info=00001000
 else if ((sensor3 > sensor1) && (sensor3 > sensor2))                         //closer to sensor 3
     info = 32;                                                                 //info=10000000
-else if ((sensor1>sensor3 && sensor2>sensor3) && (abs(sensor1-sensor2)<5)      //between sensor 1 and 2
+else if ((sensor1>sensor3 && sensor2>sensor3) && (abs(sensor1-sensor2)<5))      //between sensor 1 and 2
  info = 4;                                                                      //info=00000010
-else if ((sensor1>sensor2 && sensor3>sensor2) && (abs(sensor1-sensor2)<5)       //between sensor 2 and 3
+else if ((sensor1>sensor2 && sensor3>sensor2) && (abs(sensor1-sensor2)<5))       //between sensor 2 and 3
  info = 16;                                                                  //info=00100000
 
 
