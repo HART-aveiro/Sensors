@@ -608,7 +608,7 @@ void loop(void){
     Serial.write(idLIDAR);
 
     for(i =180; i >= 0; i--){
-      bufMPU->pull(bufLIDAR, &sendSHORT);
+      bufLIDAR->pull(bufLIDAR, &sendSHORT);
 
 
       Serial.write(sendSHORT.send2[1]);  
