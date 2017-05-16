@@ -46,7 +46,7 @@ char flagFlames, flagDHT;
 
 
   //DHT
-  #define DHTPIN 8
+  #define DHTPIN 5  
   #define DHTTYPE DHT11
   DHT dht(DHTPIN, DHTTYPE); //dht object declaration
   float h = NAN,t = NAN;
@@ -60,7 +60,7 @@ char flagFlames, flagDHT;
 
 
   //PhotoDiode
-  #define pinPhotoDiode 2
+  #define pinPhotoDiode 3
   //Servo
   #define pinServo 11
   //Brushless
@@ -69,11 +69,11 @@ char flagFlames, flagDHT;
   #define lowAngle 60
   #define upAngle 140
 
-  #define idLIDAR 0x41
-  #define idDHT 0x42
-  #define idMPU 0x43
-  #define idMQ7 0x44
-  #define idFlames 0x45
+  #define idLIDAR 0x01
+  #define idDHT 0x02
+  #define idMPU 0x03
+  #define idMQ7 0x05
+  #define idFLAMES 0x04
 
 
 
@@ -93,7 +93,7 @@ char flagFlames, flagDHT;
   RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
   RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
   RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
-  RingBuf *bufFlame = RingBuf_new(sizeof(byte), 8);
+  RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
   RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
 
   //time variables for photodiode interrupt
@@ -193,51 +193,51 @@ char flagFlames, flagDHT;
     }
 
    //Serial initialization////////////////////////
-    Serial.begin(115200);
-    if (DEBUG){
+    Serial.begin(2000000);
+/*    if (DEBUG){
      Serial.println("Hello im working");
    }
-   
+*/   
    //////////////////////////////////////////////
    //DHT/////////////////////////////////////////
-   dht.begin();
+    dht.begin();
 
    /////////////////////////////////////////////
 
    //MPU6050 initialization//////////////////////
-   initialize_imu();
+    initialize_imu();
    /////////////////////////////////////////////
-   
+
    //MQ7//////////////////////////////////
-   pinMode(togglePIN,OUTPUT);
-   digitalWrite(togglePIN,HIGH);
+    pinMode(togglePIN,OUTPUT);
+    digitalWrite(togglePIN,HIGH);
     ///////////////////////////////////
 
    //Initialize servo and sendo to pos 60
-   servo.attach(pinServo);
-   servo.write(pos);
+    servo.attach(pinServo);
+    servo.write(pos);
    ////////////////////////////////////////////////
 
    //initialize brushless/////////////////////////
    //set speed to 10
 
-   brushless.attach(pinBrushless,1000,2000);
-   turnOn(brushless);
-   defineVelocity(velocity,brushless);
+    brushless.attach(pinBrushless,1000,2000);
+    turnOn(brushless);
+    defineVelocity(velocity,brushless);
    ///////////////////////////////////////////////
 
   //Timer initialization///////////////////////////
   //Timer is used for interrupt
 
-   Timer3.initialize(1000);
-   Timer3.attachInterrupt(getSensors);
+    Timer3.initialize(2000);
+    Timer3.attachInterrupt(getSensors);
     //interrupt every 1ms
    Timer3.start();//*/
    ////////////////////////////////////////////////
 
 
   //Interrupt from photodiode
-   attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
+    attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
    ///////////////////////////////////////////////
 
   /*
@@ -254,7 +254,7 @@ char flagFlames, flagDHT;
       lidarliteAddress: Default 0x62. Fill in new address here if changed. See
         operating manual for instructions.
     //*/
-    myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
+    //myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
 
     /*
       configure(int configuration, char lidarliteAddress)
@@ -282,9 +282,9 @@ char flagFlames, flagDHT;
 
   //*/
 
-   myLidarLite.write(0x02, 0x0d); // Maximum acquisition count of 0x0d. (default is 0x80)
-    myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
-    myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
+  // myLidarLite.write(0x02, 0x0d); // Maximum acquisition count of 0x0d. (default is 0x80)
+  //  myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
+  //  myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
 
 
   }/////////////////////////////////////end setup/
@@ -349,27 +349,21 @@ char flagFlames, flagDHT;
     countTemp+=1;
 
   //MPU6050 data aquisition  
-    if(countMPU==2){
-      if(distCount==100){
-        //dist = (short) myLidarLite.distance(false);
-        dist = (short) distanceFast(false);
-      }else{
-        //dist = (short) myLidarLite.distance();
-        dist = (short) distanceFast(false);
-      }
+    // if(countMPU==1){
+    //   if(distCount==100){
+    //     //dist = (short) myLidarLite.distance(false);
+    //     dist = (short) distanceFast(false);
+    //   }else{
+    //     //dist = (short) myLidarLite.distance();
+    //     dist = (short) distanceFast(false);
+    //   }
 
-      //pr
-      bufLIDAR->add(bufLIDAR, &dist);
-    }
-
-
-    if(countMPU==4){
-      countMPU=0;
-
-
-      read_mpu_values();
+     
+    //   bufLIDAR->add(bufLIDAR, &dist);
+    // }
+    if (countMPU==1)
+    {
       compute_data();
-
       temp= (short) get_yaw()*10;
       bufMPU->add(bufMPU, &temp);
       temp= (short) get_roll()*10;
@@ -378,6 +372,22 @@ char flagFlames, flagDHT;
       bufMPU->add(bufMPU, &temp);  
     }
 
+
+    if(countMPU==2){
+      countMPU=0;
+
+
+      read_mpu_values();
+      //compute_data();
+
+      //temp= (short) get_yaw()*10;
+     // bufMPU->add(bufMPU, &temp);
+     // temp= (short) get_roll()*10;
+     // bufMPU->add(bufMPU, &temp);
+    //temp= (short) get_pitch()*10;
+     // bufMPU->add(bufMPU, &temp);  
+    }
+    
   //end MPU6050 data aquisition
 
 
@@ -402,7 +412,7 @@ char flagFlames, flagDHT;
     // end MQ7 data aquisition
 
     // LER valores DHT no loop
-    if(countTemp == 1000){
+    if(countTemp >= 1000){
       flagDHT=1;
     }
 
@@ -433,158 +443,77 @@ char flagFlames, flagDHT;
 
 
 
-void loop(void){
-  if(run==1){
-  ///////////////////////////////////////////////
-  ////////////////////////////////////////////////
-  //////////////////TESTS/////////////////////////
-  ////////////////////////////////////////////////
-  ////////////////////////////////////////////////
-
-
-
-  //MPU//////////////////////////////////////////////
-
-  ///////////////////////////////////////////////////
-
-   ////Brushless test////////////////////////////////
-  /*
-      lastTime=millis();
-      currentTime= lastTime;
-      errorBrush = true;
-     // digitalWrite(L3,HIGH);
-      canDo=0;
-      do{
-       while(currentTime-lastTime <= 4000){
-        if(currentTime-lastTime < 700 && canDo == 1){
-          errorBrush=false;
-          break;
-        }
-      }
-      if(errorBrush==true){
-        digitalWrite(L7,HIGH);
-        Serial.print("Error setting brushless speed");
-        //detach(brushless);
-        //revive(pinBrushless ,brushless);
-        brushless.attach(pinBrushless,1000,2000);
-        turnOn(brushless);
-        defineVelocity(10,brushless);
-
-      }
-    }while(errorBrush==true);
-
-    digitalWrite(L7,LOW);
-    digitalWrite(L3,LOW);
-    //*/
-
-
-  
-  //DHT11 test //////////////////////////////////
-   if (DEBUG){
-      digitalWrite(L1,HIGH);
-      do{
-
-        delay(2000);
-  //get readings
-        h =dht.readHumidity();
-        t=dht.readTemperature();
-
-
-  //verify if readings are valid
-        if (isnan(h) || isnan(t)) {
-          digitalWrite(L7,HIGH);
-          Serial.println("Failed to read from DHT sensor!");
-
-        }
-      }while(isnan(h) || isnan(t));
-
-      Serial.println(t);
-      Serial.println(h);
-
-      digitalWrite(L1,LOW);
-
-    }
-    run=0;
-  }
-
-
-
-
-
-  ///////////////////////////////////////////////////////////////////////////////
+  void loop(void){
+   ///////////////////////////////////////////////////////////////////////////////
   // FUNCOES NO LOOP
 
   // DHT funtion
-  if(flagDHT==1) {
-    flagDHT=0;
-    countTemp=0;
+ //  if(flagDHT==1) {
+ //    flagDHT=0;
+ //    countTemp=0;
 
-  //
-    digitalWrite(L1,HIGH);
-    temp2 =(byte) dht.readHumidity();
-    bufDHT->add(bufDHT,&temp2);
+ //  //
+ //    digitalWrite(L1,HIGH);
+ //    temp2 =(byte) dht.readHumidity();
+ //    bufDHT->add(bufDHT,&temp2);
 
-    temp2 =(byte) dht.readTemperature();
-    bufDHT->add(bufDHT,&temp2);
-    digitalWrite(L1,LOW);
-  }
+ //    temp2 =(byte) dht.readTemperature();
+ //    bufDHT->add(bufDHT,&temp2);
+ //    digitalWrite(L1,LOW);
+ //  }
 
   // MQ7 leitura
-  if(isReading == 1 && mark == 2){
+    if(isReading == 1 && mark == 2 && countTemp%1000==0){
 
      temp2= (byte) analogRead(readPIN)*0.48876; // analogRead(readPIN)*5.0/1024*10;
      bufMQ7->add(bufMQ7,&temp2);
      
-     // Serial.println(data);
    }
 
   ////////////////////////////////////////////////////////////////////////////////
 
   // ENVIAR DADOS
 
-    //MPU
+  //MPU
    if(bufMPU->numElements(bufMPU) >3){
-    Serial.print(idMPU);
+    Serial.write(idMPU);
 
     bufMPU->pull(bufMPU, &sendSHORT);
-      //Serial.print(sendSHORT.send1);
     Serial.write(sendSHORT.send2[0]);
     Serial.write(sendSHORT.send2[1]);
 
     bufMPU->pull(bufMPU, &sendSHORT);
-      //Serial.print(sendSHORT.send1);
     Serial.write(sendSHORT.send2[0]);
     Serial.write(sendSHORT.send2[1]);
 
     bufMPU->pull(bufMPU, &sendSHORT);
-      //Serial.println(sendSHORT.send1);
     Serial.write(sendSHORT.send2[0]);
     Serial.write(sendSHORT.send2[1]);
-
   }
 
-    // DHT
-
+  // DHT
   if(bufDHT->numElements(bufDHT) >2){
     Serial.write(idDHT);
+
     bufDHT->pull(bufDHT, &sendBYTE);    
     Serial.write(sendBYTE);
 
-      //Serial.println(sendBYTE);
-    bufDHT->pull(bufDHT, &sendBYTE);    
+    bufDHT->pull(bufDHT, &sendBYTE); 
     Serial.write(sendBYTE);
-
-      //Serial.println(sendBYTE);
+   
   }
 
 
-    // MQ7
+  // MQ7
   if(bufMQ7->numElements(bufMQ7) >1){
+
     Serial.write(idMQ7);
+    
 
     bufMQ7->pull(bufMQ7, &sendBYTE);   
-      //Serial.println(sendBYTE); 
+
     Serial.write(sendBYTE);
+    
 
   }
 
@@ -598,11 +527,22 @@ void loop(void){
     s3 = getFS3values();
     flameBYTE=(byte) flameposition(s1,s2,s3);
 
-    bufFlame->add(bufFlame,&flameBYTE);
+    bufFLAMES->add(bufFLAMES,&flameBYTE);
+  }
 
+
+  if (bufFLAMES-> numElements(bufFLAMES) > 1){
+   
+    Serial.write(idFLAMES);
+
+    bufFLAMES->pull(bufFLAMES, &sendBYTE);    
+    
+    Serial.write(sendBYTE);
+    
   }
 
     // LIDAR
+  
   if(bufLIDAR->numElements(bufLIDAR) >181){
       //Serial.print(3);
     Serial.write(idLIDAR);
