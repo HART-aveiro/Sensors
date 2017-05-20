@@ -15,6 +15,7 @@
 
 #define UART_BAUDRATE 2000000
 #define INT_PERIOD 1000
+#define MAX_TIME_COUNT 90000 //90 segundos
 
 ////////////////
 
@@ -40,11 +41,15 @@ int pos = lowAngle, lastPos;
 #define pinBrushless 12
 
 //MQ7
+#define readPeriodMQ7 90000
 #define heatingTime 2 //2*baseTime
 #define readingTime 3 //3*readingTime
 #define baseTime 15000
 #define togglePIN 4
 #define readPIN A3
+
+//FLAMES
+#define readPeriodFLAMES 500 
 
 //DHT
 #define DHTPIN 5  
@@ -81,6 +86,7 @@ long lastTime, currentTime;
 
 //counter variables for interrupts
 int countInt=0; //Counter for timer 3 interrupt
+int timeCount=0;
 
 
 //Variables (to be decided which stay, which go) 
@@ -97,6 +103,8 @@ byte temp2, sendBYTE, flameBYTE;
 int distCount=0;
 short dist;
 
+
+//INITS
 //LIDAR
 LIDARLite myLidarLite;
 
@@ -225,11 +233,65 @@ void setup(void){
 
  //Interrupt from photodiode
   attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
- }
+}
 /////////////////////////////////////end setup
 
+void runA(void){ //function used to execute the 1st case of the interrupt (execution must be less than 1ms)
+
+  read_mpu_values();
+
+}
+void runB(void){ //function used to execute the 2nd case of the interrupt (execution must be less than 1ms)
+
+  compute_data();
+  temp= (short) get_yaw()*10;
+  bufMPU->add(bufMPU, &temp);
+  temp= (short) get_roll()*10;
+  bufMPU->add(bufMPU, &temp);
+  temp= (short) get_pitch()*10;
+  bufMPU->add(bufMPU, &temp);  
+
+}
+
+void runC(void){
+  if(flagFLAMES1==1){
+    flagFLAMES1=0;
+    s1 = getFSvalues();
+
+  }else if(flagFLAMES2==1){
+    flagFLAMES2=0;
+    s2 = getFS2values();
+
+  }else if(flagFLAMES3==1){
+    flagFLAMES3=0;
+    s3 = getFS3values();
+    flagFLAMESdone==1;
+
+  }else if( flagMQ7==1){
+    flagMQ7=0;
+    tempMQ7= (byte) analogRead(readPIN)*0.48876; // analogRead(readPIN)*5.0/1024*10;
+    bufMQ7->add(bufMQ7,&tempMQ7);
+
+  }
+
+
+
+  if(flagCAlCflames==1 & flagFLAMESdone==1){
+    flagCAlCflames=0;
+    flagCAlCflames=0,
+
+    flameBYTE=(byte) flameposition(s1,s2,s3);
+    bufFLAMES->add(bufFLAMES,&flameBYTE);
+  }
+
+
+}
+
+
 void changeAngle(){  
+  #ifdef DEBUG
   digitalWrite(L4,HIGH);
+  #endif
   lastTime=currentTime;
   currentTime=millis();
 
@@ -240,7 +302,7 @@ void changeAngle(){
       canDo=1;
 
     }else if( currentTime-lastTime <= 630){
-      (velocity > 0)?(velocity--):(0);
+      velocity=(velocity > 0)?(velocity-1):(0);
       // if (velocity == 0){
       //   velocity=0;
       // }else{
@@ -281,7 +343,9 @@ void changeAngle(){
     }
 
   }
+  #ifdef DEBUG
   digitalWrite(L4,LOW);
+  #endif
 }
 
 void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
@@ -290,91 +354,46 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   digitalWrite(L2,HIGH);
   #endif
 
+  
+  if(timeCount%(readPeriodFLAMES) == 0){
+    flagFLAMES1 =1;
+    flagFLAMES2 =1;
+    flagFLAMES3 =1;
+    flagCAlCflames=1;
+  }
+  if( timeCount%(readPeriodMQ7)==0){
+    flagMQ7=1;
+  }
 
-  countInt++;
+  timeCount=(timeCount < MAX_TIME_COUNT)?(timeCount):(0);
+
+  switch(countInt){
+    case 0:
+    runA();
+
+    break;
+    case 1:
+    runB();
+
+    break;
+    case 2:
+    runC();
+
+    break;
+    case 3:
+    
+    break;
+    default:
+
+    break;
+  }
+
+
+  countInt=(countInt<3)?(countInt++):(0);//verifica se countInt <3 se for incrementa se não passa para 0;
   //RUNNING LIST
-  //1 - MPU   - getReadings
-  //2 - MPU   - calculations
-  //3 - LIDAR -
-
-
-
-
-
-
-  
- //MPU6050 data aquisition  
-  // if(countMPU==1){
-  //   if(distCount==100){
-  //     //dist = (short) myLidarLite.distance(false);
-  //     dist = (short) distanceFast(false);
-  //   }else{
-  //     //dist = (short) myLidarLite.distance();
-  //     dist = (short) distanceFast(false);
-  //   }
-
-
-  //   bufLIDAR->add(bufLIDAR, &dist);
-  // }
-  /*if (countMPU==1)
-  {
-    compute_data();
-    temp= (short) get_yaw()*10;
-    bufMPU->add(bufMPU, &temp);
-    temp= (short) get_roll()*10;
-    bufMPU->add(bufMPU, &temp);
-    temp= (short) get_pitch()*10;
-    bufMPU->add(bufMPU, &temp);  
-  }*/
-
-
- /* if(countMPU==2){
-    countMPU=0;
-
-
-    read_mpu_values();
-    //compute_data();
-
-    //temp= (short) get_yaw()*10;
-   // bufMPU->add(bufMPU, &temp);
-   // temp= (short) get_roll()*10;
-   // bufMPU->add(bufMPU, &temp);
-  //temp= (short) get_pitch()*10;
-   // bufMPU->add(bufMPU, &temp);  
-  }*/
-  
-//end MPU6050 data aquisition
-
-
-  // MQ7 data aquisition
-  counterMQ7++;
-  if (counterMQ7 == baseTime){
-    mark++;
-    counterMQ7 = 0;
-  }
-
-  if (mark == heatingTime && isReading == 0){
-    digitalWrite(togglePIN,LOW);
-    isReading = 1;
-    mark = 0;
-  }
-
-  if (mark == readingTime && isReading == 1){
-    digitalWrite(togglePIN,HIGH);
-    isReading = 0;
-    mark = 0;
-  }
-  // end MQ7 data aquisition
-
-  // LER valores DHT no loop
-  if(countTemp >= 1000){
-    flagDHT=1;
-  }
-
-  // LER valores flame no loop
-  if(countTemp % 500 == 0){
-    flagFlames=1;
-  }
+  //1 - MPU   - getReadings//lidar
+  //2 - MPU   - calculations//lidar
+  //3 - analogSensor
 
   #ifdef DEBUG
   digitalWrite(L2,LOW);
@@ -385,7 +404,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 union sendShort{    //definition of data typre to be able to separate data bytes
   short send1;
   byte send2[2];
- }sendSHORT;
+}sendSHORT;
 
 
 ////// inicializações para testes
@@ -398,36 +417,8 @@ bool errorBrush = true;
 
 //LOOP
 
- void loop(void){
-   ///////////////////////////////////////////////////////////////////////////////
-  // FUNCOES NO LOOP
-
-  // DHT funtion
-
-   /*if(flagDHT==1) {
-     flagDHT=0;
-     countTemp=0;
-
-
-     digitalWrite(L1,HIGH);
-     temp2 =(byte) dht.readHumidity();
-     bufDHT->add(bufDHT,&temp2);
-
-     temp2 =(byte) dht.readTemperature();
-     bufDHT->add(bufDHT,&temp2);
-     digitalWrite(L1,LOW);
-   }*/
-
-  // MQ7 leitura
-
-
-   if(isReading == 1 && mark == 2 && countTemp%1000==0){
-
-     temp2= (byte) analogRead(readPIN)*0.48876; // analogRead(readPIN)*5.0/1024*10;
-     bufMQ7->add(bufMQ7,&temp2);
-   }
-
-  ////////////////////////////////////////////////////////////////////////////////
+void loop(void){
+////////////////////////////////////////////////////////////////////////////
 
   // ENVIAR DADOS
 
@@ -446,7 +437,7 @@ bool errorBrush = true;
     bufMPU->pull(bufMPU, &sendSHORT);
     Serial.write(sendSHORT.send2[0]);
     Serial.write(sendSHORT.send2[1]);
-   }
+  }
 
   // DHT
 
@@ -461,38 +452,26 @@ bool errorBrush = true;
    }*/
 
   // MQ7
-   if(bufMQ7->numElements(bufMQ7) >1){
+  if(bufMQ7->numElements(bufMQ7) >1){
 
     Serial.write(idMQ7);
 
     bufMQ7->pull(bufMQ7, &sendBYTE);   
     Serial.write(sendBYTE);
-   }
+  }
 
   //FLAMES
 
-   if(flagFlames==1) {
-    flagFlames=0;
-
-    s1 = getFS1values();
-    s2 = getFS2values();
-    s3 = getFS3values();
-    flameBYTE=(byte) flameposition(s1,s2,s3);
-
-    bufFLAMES->add(bufFLAMES,&flameBYTE);
-   }
-
-
-   if (bufFLAMES-> numElements(bufFLAMES) > 1){
+  if (bufFLAMES-> numElements(bufFLAMES) > 1){
     Serial.write(idFLAMES);
 
     bufFLAMES->pull(bufFLAMES, &sendBYTE);    
     Serial.write(sendBYTE);
-   }
+  }
 
   // LIDAR
 
-   if(bufLIDAR->numElements(bufLIDAR) >181){
+  if(bufLIDAR->numElements(bufLIDAR) >181){
       //Serial.print(3);
     Serial.write(idLIDAR);
 
@@ -502,8 +481,8 @@ bool errorBrush = true;
       Serial.write(sendSHORT.send2[1]);  
       Serial.write(sendSHORT.send2[0]);
     }
-   } 
- }
+  } 
+}
 
 
 
