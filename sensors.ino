@@ -201,63 +201,6 @@ int distanceFast(bool biasCorrection){
   return distance;
 }
 
-void setup(void){
-  #ifdef DEBUG
-    //Define debug LEDpins as output///////////
-  pinMode(L1,OUTPUT);
-  pinMode(L2,OUTPUT);
-  pinMode(L3,OUTPUT);
-  pinMode(L4,OUTPUT);
-  pinMode(L5,OUTPUT);
-  pinMode(L6,OUTPUT);
-  pinMode(L7,OUTPUT);
-  pinMode(L8,OUTPUT);
-  digitalWrite(L1,LOW);
-  digitalWrite(L2,LOW);
-  digitalWrite(L3,LOW);
-  digitalWrite(L4,LOW);
-  digitalWrite(L5,LOW);
-  digitalWrite(L6,LOW);
-  digitalWrite(L7,LOW);
-  digitalWrite(L8,LOW);
-    ///////////////////////////////////////////
-  #endif
-
- //Serial initialization////////////////////////
-  Serial.begin(UART_BAUDRATE);
-
- //MPU6050 initialization//////////////////////
-  initialize_imu();
-
- //MQ7//////////////////////////////////
-  pinMode(togglePIN,OUTPUT);
-  digitalWrite(togglePIN,HIGH);
-
- //Initialize servo and sendo to pos 60
-  servo.attach(pinServo);
-  servo.write(pos);
-
- //initialize brushless/////////////////////////
- //set speed to 10
-
-  brushless.attach(pinBrushless,1000,2000);
-  turnOn(brushless);
-  defineVelocity(velocity,brushless);
-
- //Timer initialization///////////////////////////
- //Timer is used for interrupt
-
-  Timer3.initialize(INT_PERIOD);
-  Timer3.attachInterrupt(getSensors);
-  //interrupt every 1ms
-
-  Timer3.start();
-
- //Interrupt from photodiode
-  attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
-}
-/////////////////////////////////////end setup
-
 void runA(void){ //function used to execute the 1st case of the interrupt (execution must be less than 1ms)
 
   read_mpu_values();
@@ -295,7 +238,7 @@ void runC(void){
 
   }else if(flagFLAMES3==1){
     #ifdef DEBUG
-      digitalWrite(L1,HIGH);
+    digitalWrite(L1,HIGH);
     #endif
     
     flagFLAMES3=0;
@@ -307,7 +250,7 @@ void runC(void){
     
 
   }else if( flagMQ7==1){
-    
+
     flagMQ7=0;
     tempMQ7= (byte) analogRead(readPIN)*0.48876; // analogRead(readPIN)*5.0/1024*10;
     bufMQ7->add(bufMQ7,&tempMQ7);
@@ -322,6 +265,95 @@ void runD(void){
 
 }
 
+
+void setup(void){
+  #ifdef DEBUG
+    //Define debug LEDpins as output///////////
+  pinMode(L1,OUTPUT);
+  pinMode(L2,OUTPUT);
+  pinMode(L3,OUTPUT);
+  pinMode(L4,OUTPUT);
+  pinMode(L5,OUTPUT);
+  pinMode(L6,OUTPUT);
+  pinMode(L7,OUTPUT);
+  pinMode(L8,OUTPUT);
+  digitalWrite(L1,LOW);
+  digitalWrite(L2,LOW);
+  digitalWrite(L3,LOW);
+  digitalWrite(L4,LOW);
+  digitalWrite(L5,LOW);
+  digitalWrite(L6,LOW);
+  digitalWrite(L7,LOW);
+  digitalWrite(L8,LOW);
+    ///////////////////////////////////////////
+  #endif
+
+ //Serial initialization////////////////////////
+  Serial.begin(UART_BAUDRATE);
+
+ //MPU6050 initialization//////////////////////
+  initialize_imu();
+
+ //MQ7//////////////////////////////////
+  pinMode(togglePIN,OUTPUT);
+  digitalWrite(togglePIN,HIGH);
+
+  myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
+
+  /*
+    Write
+
+    Perform I2C write to device.
+
+    Parameters
+    ----------------------------------------------------------------------------
+    myAddress: register address to write to.
+    myValue: value to write.
+    lidarliteAddress: Default 0x62. Fill in new address here if changed. See
+      operating manual for instructions.
+  */
+  myLidarLite.write(0x02, 0x0d); // Maximum acquisition count of 0x0d. (default is 0x80)
+  myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
+  myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
+
+  
+  runD();
+  //delay(100);
+
+
+ //Initialize servo and sendo to pos 60
+  servo.attach(pinServo);
+  servo.write(pos);
+
+ //initialize brushless/////////////////////////
+ //set speed to 10
+
+  brushless.attach(pinBrushless,1000,2000);
+  turnOn(brushless);
+  defineVelocity(velocity,brushless);
+
+
+  distanceFast(true);
+
+  // Take 99 measurements without receiver bias correction and print to serial terminal
+  for(int i = 0; i < 99; i++)
+  {
+    distanceFast(false);
+  }
+
+ //Interrupt from photodiode
+  attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
+
+  //Timer initialization///////////////////////////
+  //Timer is used for interrupt
+
+  Timer3.initialize(INT_PERIOD);
+  Timer3.attachInterrupt(getSensors);
+  //interrupt every 1ms
+
+  Timer3.start();
+}
+/////////////////////////////////////end setup
 
 void changeAngle(){  
   #ifdef DEBUG
@@ -340,7 +372,7 @@ void changeAngle(){
     if(currentTime-lastTime > 630 && currentTime-lastTime <680){
       canDo=1;
 
-    }else if( currentTime-lastTime <= 630){
+    }/*else if( currentTime-lastTime <= 630){
       velocity=(velocity > 0)?(velocity-1):(0);
       // if (velocity == 0){
       //   velocity=0;
@@ -351,41 +383,41 @@ void changeAngle(){
     }else if( currentTime-lastTime >= 680){
       velocity++;
       canDo=0;
-    }
+    }*/
 
-    defineVelocity(velocity,brushless);
-    
+      defineVelocity(velocity,brushless);
+
     //Servo angle set
-    if(pos>=upAngle){
-      sDirection=0;
-    }
-    if(pos<=lowAngle){
-      sDirection=1;
-    }
+      if(pos>=upAngle){
+        sDirection=0;
+      }
+      if(pos<=lowAngle){
+        sDirection=1;
+      }
 
     //Changes servo angle if time canDo flag is set
-    if(canDo==1){
-      canDo = 0;
-      lastPos=pos;
-      if(sDirection==1){
-        pos++;
+      if(canDo==1){
+        canDo = 0;
+        lastPos=pos;
+        if(sDirection==1){
+          pos++;
+        }
+        if(sDirection==0){
+          pos--;
+        }
       }
-      if(sDirection==0){
-        pos--;
-      }
-    }
 
     //Only writes position to servo if the difference between positions is one
     //Prevents false skips....
-    if(lastPos-pos==1 || pos-lastPos==1){
-      servo.write(pos);
-    }
+      if(lastPos-pos==1 || pos-lastPos==1){
+        servo.write(pos);
+      }
 
-  }
+    }
   #ifdef DEBUG
-  digitalWrite(L4,LOW);
+    digitalWrite(L4,LOW);
   #endif
-}
+  }
 
 void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
 //increment time variables
@@ -395,7 +427,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
   
   if(timeCount% readPeriodFLAMES == 0){
-    
+
     flagFLAMES1 =1;
     flagFLAMES2 =1;
     flagFLAMES3 =1;
@@ -414,22 +446,23 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
   switch(countInt){
     case 0:
-    //runA();
+    runA();
     flagSend=0;
     break;
     case 1:
-    //runB();
+    runB();
     
     break;
     case 2:
-    Serial.println(numLIDAR);
-      
-        //runC();
-        flagSend=1;
-      
+    
+
+    runC();
+    flagSend=1;
+
     break;
     case 3:
-        runD();
+    runD();
+    
     break;
     default:
 
@@ -452,8 +485,8 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   #endif
 
   #ifdef DEBUG
-      digitalWrite(L1,LOW);
-      #endif
+  digitalWrite(L1,LOW);
+  #endif
 }
 
 
@@ -481,23 +514,23 @@ void loop(void){
 
   if(flagSend==1){
     //MPU
-     /*if(bufMPU->numElements(bufMPU) >3){
-      while(Serial.availableForWrite()<7);
+   /*if(bufMPU->numElements(bufMPU) >3){
+    while(Serial.availableForWrite()<7);
 
-      Serial.write(idMPU);
+    Serial.write(idMPU);
 
-      bufMPU->pull(bufMPU, &sendSHORT);
-      Serial.write(sendSHORT.send2[0]);
-      Serial.write(sendSHORT.send2[1]);
+    bufMPU->pull(bufMPU, &sendSHORT);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
 
-      bufMPU->pull(bufMPU, &sendSHORT);
-      Serial.write(sendSHORT.send2[0]);
-      Serial.write(sendSHORT.send2[1]);
+    bufMPU->pull(bufMPU, &sendSHORT);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
 
-      bufMPU->pull(bufMPU, &sendSHORT);
-      Serial.write(sendSHORT.send2[0]);
-      Serial.write(sendSHORT.send2[1]);
-    }*/
+    bufMPU->pull(bufMPU, &sendSHORT);
+    Serial.write(sendSHORT.send2[0]);
+    Serial.write(sendSHORT.send2[1]);
+  }*/
 
     // DHT
 
@@ -512,7 +545,7 @@ void loop(void){
      }*/
 
     // MQ7
-   /* if(bufMQ7->numElements(bufMQ7) >1){
+    if(bufMQ7->numElements(bufMQ7) >1){
 
       while(Serial.availableForWrite()<2);
       Serial.write(idMQ7);
@@ -531,24 +564,24 @@ void loop(void){
       bufFLAMES->pull(bufFLAMES, &sendBYTE);    
       Serial.write(sendBYTE);
     }
-*/
+
     // LIDAR
 
-   /* if(bufLIDAR->numElements(bufLIDAR) > numLIDAR){
+    if(bufLIDAR->numElements(bufLIDAR) > numLIDAR){
       flagLIDARcomplete=0;
-*/
-     // while(Serial.availableForWrite()<numLIDAR + 2);
-        //Serial.print(3);
-      //Serial.write(idLIDAR);
+
+      while(Serial.availableForWrite()<numLIDAR + 2);
+
+      Serial.write(idLIDAR);
       //Serial.println(numLIDAR);
 
-      /*for(i =numLIDAR; i >= 0; i--){
+      for(i =numLIDAR; i >= 0; i--){
         bufLIDAR->pull(bufLIDAR, &sendSHORT);
 
         Serial.write(sendSHORT.send2[1]);  
         Serial.write(sendSHORT.send2[0]);
-      }*/
-    //} 
+      }
+    } 
   }
 }
 
