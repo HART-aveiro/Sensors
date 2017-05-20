@@ -13,7 +13,7 @@
 #define DEBUG 1
 //to exit debug mode delete previous line ( #define DEBUG 1 )
 
-#define UART_BAUDRATE 115200
+#define UART_BAUDRATE 2000000
 #define INT_PERIOD 1000
 #define MAX_TIME_COUNT 90000 //90 segundos
 
@@ -99,15 +99,11 @@ byte s1, s2, s3;
 
 byte flagSend=1;
 
-/*float data =0;
-bool errorBrush = true;
-*/
-
-
-
 //flag to run MQ7 reading
 byte flagMQ7=0;
 int tempMQ7;
+
+
 
 
 //Variables (to be decided which stay, which go) 
@@ -130,6 +126,7 @@ int i=0; // temporary val
 //LIDAR
 LIDARLite myLidarLite;
 int numLIDAR=0;
+int numPointsLIDAR=0;
 byte flagLIDARcomplete=0;
 
 //Servo
@@ -170,7 +167,7 @@ int distanceFast(bool biasCorrection){
     // Stop status register polling if stuck in loop
     if(loopCount > 9999)
     {
-      break;
+      break;  
     }
   }
 
@@ -264,6 +261,8 @@ void setup(void){
 void runA(void){ //function used to execute the 1st case of the interrupt (execution must be less than 1ms)
 
   read_mpu_values();
+  
+
 }
 
 void runB(void){ //function used to execute the 2nd case of the interrupt (execution must be less than 1ms)
@@ -314,7 +313,12 @@ void runC(void){
     bufMQ7->add(bufMQ7,&tempMQ7);
 
   }
+}
 
+void runD(void){
+  temp=(short) distanceFast(false);
+  bufLIDAR-> add(bufLIDAR,&temp);
+  numPointsLIDAR++;
 
 }
 
@@ -326,8 +330,12 @@ void changeAngle(){
   lastTime=currentTime;
   currentTime=millis();
 
+  
+
   if(currentTime-lastTime >100){
   //Brushless motor speed feedback
+    numLIDAR=numPointsLIDAR;
+    numPointsLIDAR=0; 
 
     if(currentTime-lastTime > 630 && currentTime-lastTime <680){
       canDo=1;
@@ -346,7 +354,7 @@ void changeAngle(){
     }
 
     defineVelocity(velocity,brushless);
-
+    
     //Servo angle set
     if(pos>=upAngle){
       sDirection=0;
@@ -395,9 +403,9 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   }
 
 
-  if( timeCount%(readPeriodMQ7)==0){
+  /*if( timeCount%(readPeriodMQ7)==0){
     flagMQ7=1;
-  }
+  }*/
 
   if(timeCount < MAX_TIME_COUNT)
     timeCount++;
@@ -406,21 +414,22 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
   switch(countInt){
     case 0:
-    runA();
+    //runA();
     flagSend=0;
     break;
     case 1:
-    runB();
+    //runB();
     
     break;
     case 2:
+    Serial.println(numLIDAR);
       
-        runC();
+        //runC();
         flagSend=1;
       
     break;
     case 3:
-    
+        runD();
     break;
     default:
 
@@ -503,7 +512,7 @@ void loop(void){
      }*/
 
     // MQ7
-    if(bufMQ7->numElements(bufMQ7) >1){
+   /* if(bufMQ7->numElements(bufMQ7) >1){
 
       while(Serial.availableForWrite()<2);
       Serial.write(idMQ7);
@@ -522,23 +531,24 @@ void loop(void){
       bufFLAMES->pull(bufFLAMES, &sendBYTE);    
       Serial.write(sendBYTE);
     }
-
+*/
     // LIDAR
 
-    if(bufLIDAR->numElements(bufLIDAR) >numLIDAR){
+   /* if(bufLIDAR->numElements(bufLIDAR) > numLIDAR){
       flagLIDARcomplete=0;
-
-      while(Serial.availableForWrite()<300);
+*/
+     // while(Serial.availableForWrite()<numLIDAR + 2);
         //Serial.print(3);
-      Serial.write(idLIDAR);
+      //Serial.write(idLIDAR);
+      //Serial.println(numLIDAR);
 
-      for(i =180; i >= 0; i--){
+      /*for(i =numLIDAR; i >= 0; i--){
         bufLIDAR->pull(bufLIDAR, &sendSHORT);
 
         Serial.write(sendSHORT.send2[1]);  
         Serial.write(sendSHORT.send2[0]);
-      }
-    } 
+      }*/
+    //} 
   }
 }
 
