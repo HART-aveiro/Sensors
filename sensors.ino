@@ -13,7 +13,7 @@
 #define DEBUG 1
 //to exit debug mode delete previous line ( #define DEBUG 1 )
 
-#define UART_BAUDRATE 2000000
+#define UART_BAUDRATE 115200
 #define INT_PERIOD 1000
 #define MAX_TIME_COUNT 90000 //90 segundos
 
@@ -41,7 +41,7 @@ int pos = lowAngle, lastPos;
 #define pinBrushless 12
 
 //MQ7
-#define readPeriodMQ7 90000
+#define readPeriodMQ7 90000 //ad more features to mq7
 #define heatingTime 2 //2*baseTime
 #define readingTime 3 //3*readingTime
 #define baseTime 15000
@@ -49,7 +49,7 @@ int pos = lowAngle, lastPos;
 #define readPIN A3
 
 //FLAMES
-#define readPeriodFLAMES 500 
+#define readPeriodFLAMES 500
 
 //DHT
 #define DHTPIN 5  
@@ -88,14 +88,35 @@ long lastTime, currentTime;
 int countInt=0; //Counter for timer 3 interrupt
 int timeCount=0;
 
+//flags to read and cal FLAME sensors
+byte flagFLAMESdone =0;
+byte flagCAlCflames=0;
+byte flagFLAMES1=0;
+byte flagFLAMES2=0;
+byte flagFLAMES3=0;
+
+byte s1, s2, s3;
+
+byte flagSend=1;
+
+/*float data =0;
+bool errorBrush = true;
+*/
+
+
+
+//flag to run MQ7 reading
+byte flagMQ7=0;
+int tempMQ7;
+
 
 //Variables (to be decided which stay, which go) 
-unsigned int counterMQ7;
+/*unsigned int counterMQ7;
 char mark;
 char isReading;
 char flagFlames, flagDHT;
-
-volatile int countTemp=0; //Counter for DHT11
+*/
+//volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
 short temp;
 byte temp2, sendBYTE, flameBYTE;
@@ -103,10 +124,13 @@ byte temp2, sendBYTE, flameBYTE;
 int distCount=0;
 short dist;
 
+int i=0; // temporary val
 
 //INITS
 //LIDAR
 LIDARLite myLidarLite;
+int numLIDAR=0;
+byte flagLIDARcomplete=0;
 
 //Servo
 PWMServo servo;
@@ -119,7 +143,8 @@ int velocity=10;
 float h = NAN,t = NAN;
 DHT dht(DHTPIN, DHTTYPE); //dht object declaration
 
-
+void getSensors(void);
+void changeAngle(void);
 
 // Read distance. The approach is to poll the status register until the device goes
 // idle after finishing a measurement, send a new measurement command, then read the
@@ -239,8 +264,8 @@ void setup(void){
 void runA(void){ //function used to execute the 1st case of the interrupt (execution must be less than 1ms)
 
   read_mpu_values();
-
 }
+
 void runB(void){ //function used to execute the 2nd case of the interrupt (execution must be less than 1ms)
 
   compute_data();
@@ -250,38 +275,44 @@ void runB(void){ //function used to execute the 2nd case of the interrupt (execu
   bufMPU->add(bufMPU, &temp);
   temp= (short) get_pitch()*10;
   bufMPU->add(bufMPU, &temp);  
-
 }
+
 
 void runC(void){
   if(flagFLAMES1==1){
+   /* #ifdef DEBUG
+      digitalWrite(L1,HIGH);
+      #endif*/
+
     flagFLAMES1=0;
-    s1 = getFSvalues();
+    s1 = getFS1values();
 
   }else if(flagFLAMES2==1){
+    /*#ifdef DEBUG
+      digitalWrite(L1,HIGH);
+      #endif*/
     flagFLAMES2=0;
     s2 = getFS2values();
 
   }else if(flagFLAMES3==1){
+    #ifdef DEBUG
+      digitalWrite(L1,HIGH);
+    #endif
+    
     flagFLAMES3=0;
     s3 = getFS3values();
-    flagFLAMESdone==1;
+
+
+    flameBYTE=(byte) flameposition(s1,s2,s3);
+    bufFLAMES->add(bufFLAMES,&flameBYTE);
+    
 
   }else if( flagMQ7==1){
+    
     flagMQ7=0;
     tempMQ7= (byte) analogRead(readPIN)*0.48876; // analogRead(readPIN)*5.0/1024*10;
     bufMQ7->add(bufMQ7,&tempMQ7);
 
-  }
-
-
-
-  if(flagCAlCflames==1 & flagFLAMESdone==1){
-    flagCAlCflames=0;
-    flagCAlCflames=0,
-
-    flameBYTE=(byte) flameposition(s1,s2,s3);
-    bufFLAMES->add(bufFLAMES,&flameBYTE);
   }
 
 
@@ -355,30 +386,38 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   #endif
 
   
-  if(timeCount%(readPeriodFLAMES) == 0){
+  if(timeCount% readPeriodFLAMES == 0){
+    
     flagFLAMES1 =1;
     flagFLAMES2 =1;
     flagFLAMES3 =1;
     flagCAlCflames=1;
   }
+
+
   if( timeCount%(readPeriodMQ7)==0){
     flagMQ7=1;
   }
 
-  timeCount=(timeCount < MAX_TIME_COUNT)?(timeCount):(0);
+  if(timeCount < MAX_TIME_COUNT)
+    timeCount++;
+  else
+    timeCount=0;
 
   switch(countInt){
     case 0:
     runA();
-
+    flagSend=0;
     break;
     case 1:
     runB();
-
+    
     break;
     case 2:
-    runC();
-
+      
+        runC();
+        flagSend=1;
+      
     break;
     case 3:
     
@@ -388,8 +427,12 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     break;
   }
 
+  if(countInt <3)
+    countInt++;
+  else
+    countInt=0;
 
-  countInt=(countInt<3)?(countInt++):(0);//verifica se countInt <3 se for incrementa se não passa para 0;
+  //countInt=(countInt<3)?(countInt++):(0);//verifica se countInt <3 se for incrementa se não passa para 0;
   //RUNNING LIST
   //1 - MPU   - getReadings//lidar
   //2 - MPU   - calculations//lidar
@@ -398,6 +441,10 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   #ifdef DEBUG
   digitalWrite(L2,LOW);
   #endif
+
+  #ifdef DEBUG
+      digitalWrite(L1,LOW);
+      #endif
 }
 
 
@@ -409,9 +456,6 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 ////// inicializações para testes
 
-int run=1, s1,s2, s3,i;
-float data =0;
-bool errorBrush = true;
 
 ////// fim das initializações para testes 
 
@@ -421,67 +465,81 @@ void loop(void){
 ////////////////////////////////////////////////////////////////////////////
 
   // ENVIAR DADOS
+  if (flagSend==1)
+    digitalWrite(L3,HIGH);
+  else 
+    digitalWrite(L3 ,LOW);
 
-  //MPU
-   if(bufMPU->numElements(bufMPU) >3){
-    Serial.write(idMPU);
+  if(flagSend==1){
+    //MPU
+     /*if(bufMPU->numElements(bufMPU) >3){
+      while(Serial.availableForWrite()<7);
 
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.write(sendSHORT.send2[0]);
-    Serial.write(sendSHORT.send2[1]);
+      Serial.write(idMPU);
 
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.write(sendSHORT.send2[0]);
-    Serial.write(sendSHORT.send2[1]);
-
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.write(sendSHORT.send2[0]);
-    Serial.write(sendSHORT.send2[1]);
-  }
-
-  // DHT
-
-   /*if(bufDHT->numElements(bufDHT) >2){
-    Serial.write(idDHT);
-
-    bufDHT->pull(bufDHT, &sendBYTE);    
-    Serial.write(sendBYTE);
-
-    bufDHT->pull(bufDHT, &sendBYTE); 
-    Serial.write(sendBYTE);
-   }*/
-
-  // MQ7
-  if(bufMQ7->numElements(bufMQ7) >1){
-
-    Serial.write(idMQ7);
-
-    bufMQ7->pull(bufMQ7, &sendBYTE);   
-    Serial.write(sendBYTE);
-  }
-
-  //FLAMES
-
-  if (bufFLAMES-> numElements(bufFLAMES) > 1){
-    Serial.write(idFLAMES);
-
-    bufFLAMES->pull(bufFLAMES, &sendBYTE);    
-    Serial.write(sendBYTE);
-  }
-
-  // LIDAR
-
-  if(bufLIDAR->numElements(bufLIDAR) >181){
-      //Serial.print(3);
-    Serial.write(idLIDAR);
-
-    for(i =180; i >= 0; i--){
-      bufLIDAR->pull(bufLIDAR, &sendSHORT);
-
-      Serial.write(sendSHORT.send2[1]);  
+      bufMPU->pull(bufMPU, &sendSHORT);
       Serial.write(sendSHORT.send2[0]);
+      Serial.write(sendSHORT.send2[1]);
+
+      bufMPU->pull(bufMPU, &sendSHORT);
+      Serial.write(sendSHORT.send2[0]);
+      Serial.write(sendSHORT.send2[1]);
+
+      bufMPU->pull(bufMPU, &sendSHORT);
+      Serial.write(sendSHORT.send2[0]);
+      Serial.write(sendSHORT.send2[1]);
+    }*/
+
+    // DHT
+
+     /*if(bufDHT->numElements(bufDHT) >2){
+      Serial.write(idDHT);
+
+      bufDHT->pull(bufDHT, &sendBYTE);    
+      Serial.write(sendBYTE);
+
+      bufDHT->pull(bufDHT, &sendBYTE); 
+      Serial.write(sendBYTE);
+     }*/
+
+    // MQ7
+    if(bufMQ7->numElements(bufMQ7) >1){
+
+      while(Serial.availableForWrite()<2);
+      Serial.write(idMQ7);
+
+      bufMQ7->pull(bufMQ7, &sendBYTE);   
+      Serial.write(sendBYTE);
     }
-  } 
+
+    //FLAMES
+
+    if (bufFLAMES-> numElements(bufFLAMES) > 1){
+
+      while(Serial.availableForWrite()<2);
+      Serial.write(idFLAMES);
+
+      bufFLAMES->pull(bufFLAMES, &sendBYTE);    
+      Serial.write(sendBYTE);
+    }
+
+    // LIDAR
+
+    if(bufLIDAR->numElements(bufLIDAR) >numLIDAR){
+      flagLIDARcomplete=0;
+
+      while(Serial.availableForWrite()<300);
+        //Serial.print(3);
+      Serial.write(idLIDAR);
+
+      for(i =180; i >= 0; i--){
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+
+        Serial.write(sendSHORT.send2[1]);  
+        Serial.write(sendSHORT.send2[0]);
+      }
+    } 
+  }
 }
 
 
