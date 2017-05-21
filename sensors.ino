@@ -435,7 +435,6 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     flagCAlCflames=1;
   }
 
-
   /*if( timeCount%(readPeriodMQ7)==0){
     flagMQ7=1;
   }*/
