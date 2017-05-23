@@ -17,7 +17,7 @@
 /*Function Prototypes*/
 int ema_filter(int current_value);
 int ema_filter1(int current_value); 
-int ema_filte2(int current_value);
+int ema_filter2(int current_value);
 int getFS1values();
 int getFS2values();
 int getFS3values();
