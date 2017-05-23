@@ -114,7 +114,7 @@ char flagFlames, flagDHT;
 */
 //volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
-short temp;
+int temp;
 byte temp2, sendBYTE, flameBYTE;
 
 int distCount=0;
@@ -208,14 +208,18 @@ void runA(void){ //function used to execute the 1st case of the interrupt (execu
 
 }
 
+int tempZ;
+
 void runB(void){ //function used to execute the 2nd case of the interrupt (execution must be less than 1ms)
 
   compute_data();
-  temp= (short) get_yaw()*10;
+  temp= (short)((int) get_yaw());
   bufMPU->add(bufMPU, &temp);
-  temp= (short) get_roll()*10;
+  temp= (short)((int) get_roll());
   bufMPU->add(bufMPU, &temp);
-  temp= (short) get_pitch()*10;
+  tempZ= (int) get_pitch();
+
+  Serial.println(tempZ);
   bufMPU->add(bufMPU, &temp);  
 }
 
@@ -291,6 +295,7 @@ void setup(void){
 
  //Serial initialization////////////////////////
   Serial.begin(UART_BAUDRATE);
+  Serial1.begin(115200);
 
  //MPU6050 initialization//////////////////////
   initialize_imu();
@@ -408,6 +413,8 @@ void changeAngle(){
   #endif
   }
 
+byte sendMPUtoRobot=0;
+
 void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
 //increment time variables
   #ifdef DEBUG
@@ -416,7 +423,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
   
   if(timeCount% readPeriodFLAMES == 0){
-
+  	sendMPUtoRobot=1;
     flagFLAMES1 =1;
     flagFLAMES2 =1;
     flagFLAMES3 =1;
@@ -451,7 +458,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
     break;
     case 3:
-    //runD();
+    //runD();.
     //MPU
    /*if(bufMPU->numElements(bufMPU) >3){
     while(Serial.availableForWrite()<7);
@@ -552,7 +559,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 union sendShort{    //definition of data typre to be able to separate data bytes
   short send1;
   byte send2[2];
-}sendSHORT;
+}sendSHORT, sendShortRobot;
 
 
 ////// inicializações para testes
@@ -564,23 +571,32 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 void loop(void){
 ////////////////////////////////////////////////////////////////////////////
+	if(sendMPUtoRobot==1){
+		//Serial1.write(idMPU);
+		Serial1.write(sendShortRobot.send1);
+	    //Serial1.write(sendShortRobot.send2[1]);
+		//Serial.println(sendShortRobot.send1);
+
+	}
 
 	if(bufMPU->numElements(bufMPU) >3){
 	    while(Serial.availableForWrite()<7);
 
-	    Serial.write(idMPU);
+	    //Serial.write(idMPU);
 
 	    bufMPU->pull(bufMPU, &sendSHORT);
-	    Serial.write(sendSHORT.send2[0]);
-	    Serial.write(sendSHORT.send2[1]);
+	    //Serial.write(sendSHORT.send2[0]);
+	    //Serial.write(sendSHORT.send2[1]);
 
 	    bufMPU->pull(bufMPU, &sendSHORT);
-	    Serial.write(sendSHORT.send2[0]);
-	    Serial.write(sendSHORT.send2[1]);
+	    //Serial.write(sendSHORT.send2[0]);
+	    //Serial.write(sendSHORT.send2[1]);
 
 	    bufMPU->pull(bufMPU, &sendSHORT);
-	    Serial.write(sendSHORT.send2[0]);
-	    Serial.write(sendSHORT.send2[1]);
+	    sendShortRobot=sendSHORT;
+	    //Serial.write(sendSHORT.send2[0]);
+	    //Serial.write(sendSHORT.send2[1]);
+
 	}
 
 
