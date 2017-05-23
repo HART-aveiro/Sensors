@@ -299,20 +299,8 @@ void setup(void){
   pinMode(togglePIN,OUTPUT);
   digitalWrite(togglePIN,HIGH);
 
-  myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
+  /*myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
 
-  /*
-    Write
-
-    Perform I2C write to device.
-
-    Parameters
-    ----------------------------------------------------------------------------
-    myAddress: register address to write to.
-    myValue: value to write.
-    lidarliteAddress: Default 0x62. Fill in new address here if changed. See
-      operating manual for instructions.
-  */
   myLidarLite.write(0x02, 0x0d); // Maximum acquisition count of 0x0d. (default is 0x80)
   myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
   myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
@@ -321,7 +309,7 @@ void setup(void){
   runD();
   //delay(100);
 
-
+*/
  //Initialize servo and sendo to pos 60
   servo.attach(pinServo);
   servo.write(pos);
@@ -334,16 +322,16 @@ void setup(void){
   defineVelocity(velocity,brushless);
 
 
-  distanceFast(true);
+  /*distanceFast(true);
 
   // Take 99 measurements without receiver bias correction and print to serial terminal
   for(int i = 0; i < 99; i++)
   {
     distanceFast(false);
-  }
+  }*/
 
  //Interrupt from photodiode
-  //attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
+  attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
 
   //Timer initialization///////////////////////////
   //Timer is used for interrupt
@@ -458,7 +446,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     case 2:
     
 
-    //runC();
+    runC();
     flagSend=1;
 
     break;
@@ -577,11 +565,27 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 void loop(void){
 ////////////////////////////////////////////////////////////////////////////
 
+	if(bufMPU->numElements(bufMPU) >3){
+	    while(Serial.availableForWrite()<7);
+
+	    Serial.write(idMPU);
+
+	    bufMPU->pull(bufMPU, &sendSHORT);
+	    Serial.write(sendSHORT.send2[0]);
+	    Serial.write(sendSHORT.send2[1]);
+
+	    bufMPU->pull(bufMPU, &sendSHORT);
+	    Serial.write(sendSHORT.send2[0]);
+	    Serial.write(sendSHORT.send2[1]);
+
+	    bufMPU->pull(bufMPU, &sendSHORT);
+	    Serial.write(sendSHORT.send2[0]);
+	    Serial.write(sendSHORT.send2[1]);
+	}
 
 
 
-
-
+/*
   if(digitalRead(pinPhotoDiode)==1){
     lastTime=currentTime;
     currentTime=millis();
@@ -608,7 +612,7 @@ void loop(void){
       velocity++;
       canDo=0;
     }*/
-
+/*
         defineVelocity(velocity,brushless);
 
     //Servo angle set
