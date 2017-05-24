@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <RingBuf.h>
 //#include <TimerThree.h>
-//#include <TimerOne.h>
+#include <TimerOne.h>
 //#include "hartimu.h"
 #include <Wire.h>
 //#include <DHT.h>
@@ -18,8 +18,8 @@
 #define INT_PERIOD 1000
 #define MAX_TIME_COUNT 90000 //90 segundos
 
-#define pinSTARTlidar 6
-#define pinPRINTlidar 7
+#define pinSTARTlidar 7
+//#define pinPRINTlidar 7
 #define pinSAVElidar 8
 
 ////////////////
@@ -59,7 +59,7 @@
 
 #ifdef DEBUG
 //Debug LEDs
-#define L1 30 //DHT
+#define L1 11 //DHT
 #define L2 31 //MPU
 #define L3 32 //Brushless
 #define L4 33 //MQ7
@@ -183,6 +183,8 @@ int distanceFast(bool biasCorrection){
 	return distance;
 }
 
+void getSensors();
+
 void setup(void){
   #ifdef DEBUG
     //Define debug LEDpins as output///////////
@@ -206,10 +208,10 @@ void setup(void){
   #endif
 	pinMode(pinSAVElidar, INPUT);
 	pinMode(pinSTARTlidar, INPUT);
-	pinMode(pinPRINTlidar, INPUT);
+	//pinMode(pinPRINTlidar, INPUT);
 
 	//Serial initialization////////////////////////
-		Serial.begin(UART_BAUDRATE);
+	Serial.begin(UART_BAUDRATE);
 
 	//Lidar stuff
 
@@ -220,7 +222,7 @@ void setup(void){
 	  myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
 
  	//Timer stuff
-cli();//stop interrupts
+/*cli();//stop interrupts
 	   //set timer2 interrupt at 8kHz
   TCCR1A = 0;// set entire TCCR2A register to 0
   TCCR1B = 0;// same for TCCR2B
@@ -236,20 +238,25 @@ cli();//stop interrupts
 
 
 sei();//allow interrupts
+*/
 
-  
-}
+	  Timer1.initialize(2778);
+	  Timer1.attachInterrupt(getSensors);
+  //interrupt every 1ms
+
+	  Timer1.start();
+	}
 /////////////////////////////////////end setup
 
-ISR(TIMER1_COMPA_vect){//timer1 interrupt 8kHz toggles pin 9
-	TCNT1=0;
+void getSensors(){//timer1 interrupt 8kHz toggles pin 9
+	//TCNT1=0;
 	#ifdef DEBUG
-	digitalWrite(9,HIGH);
+	digitalWrite(13,HIGH);
 	#endif
 	flagLIDAR=1;
 	#ifdef DEBUG
 	analogRead(A0);
-	digitalWrite(9,LOW);
+	digitalWrite(13,LOW);
 	#endif
 }
 
@@ -261,40 +268,53 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 void loop(void){////////////////////////////////////////////////////////////////////////////
 	//Record num of points to print
-		saveLIDAR=digitalRead(pinSAVElidar);
-		if(saveLIDAR==1){
-			numPrintLidar=numPointsLIDAR;
-		}
+	saveLIDAR=digitalRead(pinSAVElidar);
+	if(saveLIDAR==1){
+		numPrintLidar=numPointsLIDAR;
+		printLIDARdata=1;
+		printNum=numPrintLidar;
+		Serial.write(printNum);
+	}
 
 	//Print section
-		printLIDARdata=digitalRead(pinPRINTlidar);
-		if( printLIDARdata==1){
-			if(Serial.availableForWrite() > numPrintLidar){
+	//printLIDARdata=digitalRead(pinPRINTlidar);
+	if( printLIDARdata==1){
+		if(numPrintLidar > 100){
+			if(Serial.availableForWrite() > 16){// numPrintLidar){
+
 				if(printNum==0){
-					printNum=numPrintLidar;
-					Serial.write(idLIDAR);
+					printLIDARdata=0;
+					//Serial.write(0x00);
+
+					//Serial.write(0x00);
+					
+					//Serial.write(idLIDAR);
 				}else{
 					printNum--;
 				}
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
 
-		        Serial.write(sendSHORT.send2[1]);  
-		        Serial.write(sendSHORT.send2[0]);
+				Serial.write(sendSHORT.send2[1]);  
+				Serial.write(sendSHORT.send2[0]);
 			}
 		}
+	}
 
 	//Measurement section
-		startLIDAR=digitalRead(pinSTARTlidar);
-		if(startLIDAR==1){
-			if(flagLIDAR=1){
+	startLIDAR=digitalRead(pinSTARTlidar);
+	if(startLIDAR==1){
+		if(flagLIDAR=1){
+			digitalWrite(L1,HIGH);
 				flagLIDAR=0;//is controllled by an interrupt
 				distance=(short)distanceFast(false);
 				bufLIDAR->add(bufLIDAR,&distance);
 				numPointsLIDAR++;
+
+				digitalWrite(L1,LOW);
 			}
 		}
-}
+	}
 
 
 
