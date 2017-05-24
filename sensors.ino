@@ -211,7 +211,7 @@ void setup(void){
 	//pinMode(pinPRINTlidar, INPUT);
 
 	//Serial initialization////////////////////////
-	Serial.begin(UART_BAUDRATE);
+	Serial.begin(115200);
 
 	//Lidar stuff
 
@@ -269,7 +269,7 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 void loop(void){////////////////////////////////////////////////////////////////////////////
 	//Record num of points to print
 	saveLIDAR=digitalRead(pinSAVElidar);
-	if(saveLIDAR==1){
+	if(saveLIDAR==1 && printLIDARdata==0){
 		numPrintLidar=numPointsLIDAR;
 		printLIDARdata=1;
 		printNum=numPrintLidar;
@@ -304,16 +304,16 @@ void loop(void){////////////////////////////////////////////////////////////////
 	//Measurement section
 	startLIDAR=digitalRead(pinSTARTlidar);
 	if(startLIDAR==1){
-		if(flagLIDAR=1){
+		//if(flagLIDAR=1){
 			digitalWrite(L1,HIGH);
 				flagLIDAR=0;//is controllled by an interrupt
-				distance=(short)distanceFast(false);
+				Serial.println(distanceFast(false));
 				bufLIDAR->add(bufLIDAR,&distance);
 				numPointsLIDAR++;
 
 				digitalWrite(L1,LOW);
 			}
-		}
+		//}
 	}
 
 
