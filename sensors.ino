@@ -138,7 +138,7 @@ int distanceFast(bool biasCorrection){
 	interrupts();
 	byte isBusy = 1;
 	int distance;
-	int loopCount;
+	int loopCount=0;
 
   	// Poll busy bit in status register until device is idle
 	while(isBusy){
@@ -226,13 +226,13 @@ cli();//stop interrupts
   TCCR1B = 0;// same for TCCR2B
   TCNT1  = 0;//initialize counter value to 0
   // set compare match register for 8khz increments
-  OCR1A = 249;// = (16*10^6) / (8000*8) - 1 (must be <256)
+  OCR1A = 170;// = (16*10^6) / (405*8) - 1 (must be <256) 4938  4954
   // turn on CTC mode
-  TCCR1A |= (1 << WGM21);
+  TCCR1A |= (1 << WGM11);
   // Set CS21 bit for 8 prescaler
-  TCCR1B |= (1 << CS21)|(1<<CS20);   
+  TCCR1B |= (1 << CS12);//|(1<<CS10);   
   // enable timer compare interrupt
-  TIMSK1 |= (1 << OCIE2A);
+  TIMSK1 |= (1 << OCIE1A);
 
 
 sei();//allow interrupts
@@ -241,16 +241,16 @@ sei();//allow interrupts
 }
 /////////////////////////////////////end setup
 
-ISR(TIMER2_COMPA_vect){//timer1 interrupt 8kHz toggles pin 9
-//generates pulse wave of frequency 8kHz/2 = 4kHz (takes two cycles for full wave- toggle high then toggle low)
-  if (toggle2){
-    digitalWrite(9,HIGH);
-    toggle2 = 0;
-  }
-  else{
-    digitalWrite(9,LOW);
-    toggle2 = 1;
-  }
+ISR(TIMER1_COMPA_vect){//timer1 interrupt 8kHz toggles pin 9
+	TCNT1=0;
+	#ifdef DEBUG
+	digitalWrite(9,HIGH);
+	#endif
+	flagLIDAR=1;
+	#ifdef DEBUG
+	analogRead(A0);
+	digitalWrite(9,LOW);
+	#endif
 }
 
 
