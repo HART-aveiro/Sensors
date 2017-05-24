@@ -8,6 +8,14 @@
 #include "brsh.h"
 #include "flamesensor.h"
 #include <LIDARLite.h>
+#include "ApplicationMonitor.h"
+
+
+Watchdog::CApplicationMonitor ApplicationMonitor;
+
+// number of iterations completed. 
+int g_nIterations = 0;   
+
 
 //Things to change
 #define DEBUG 1
@@ -219,7 +227,7 @@ void runB(void){ //function used to execute the 2nd case of the interrupt (execu
   bufMPU->add(bufMPU, &temp);
   tempZ= (int) get_pitch();
 
-  Serial.println(tempZ);
+  //Serial.println(tempZ);
   bufMPU->add(bufMPU, &temp);  
 }
 
@@ -271,6 +279,12 @@ void runD(void){
 
 
 void setup(void){
+
+  ApplicationMonitor.Dump(Serial);
+  ApplicationMonitor.EnableWatchdog(Watchdog::CApplicationMonitor::Timeout_4s);
+  //ApplicationMonitor.DisableWatchdog();
+
+
   #ifdef DEBUG
     //Define debug LEDpins as output///////////
   pinMode(L1,OUTPUT);
@@ -571,6 +585,11 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 void loop(void){
 ////////////////////////////////////////////////////////////////////////////
+
+	Serial.println("entrou no loop");
+  ApplicationMonitor.IAmAlive();
+  ApplicationMonitor.SetData(g_nIterations++);
+
 	if(sendMPUtoRobot==1){
 		//Serial1.write(idMPU);
 		Serial1.write(sendShortRobot.send1);
