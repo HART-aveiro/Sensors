@@ -5,7 +5,7 @@
 //#include "hartimu.h"
 #include <Wire.h>
 //#include <DHT.h>
-//#include <PWMServo.h> 
+#include <PWMServo.h> 
 //#include "brsh.h"
 //#include "flamesensor.h"
 #include <LIDARLite.h>
@@ -34,13 +34,13 @@
 //#define pinPhotoDiode 3
 
 //Servo
-//#define pinServo 11
-//#define lowAngle 60
-//#define upAngle 140
+#define pinServo 9
+#define lowAngle 60
+#define upAngle 140
 
-//int canDo;
-//int sDirection=0;
-//int pos = lowAngle, lastPos;
+int canDo;
+int sDirection=0;
+int pos = lowAngle, lastPos;
 
 //Brushless
 //#define pinBrushless 12
@@ -124,7 +124,7 @@ int printNum=0;
 int toggle2=0;
 
 //Servo
-//PWMServo servo;
+PWMServo servo;
 
 //Brushless
 //PWMServo brushless;
@@ -211,7 +211,7 @@ void setup(void){
 	//pinMode(pinPRINTlidar, INPUT);
 
 	//Serial initialization////////////////////////
-	Serial.begin(115200);
+	Serial.begin(115200 );
 
 	//Lidar stuff
 
@@ -220,6 +220,13 @@ void setup(void){
 	  myLidarLite.write(0x02, 0x0d); // Maximum acquisition count of 0x0d. (default is 0x80)
 	  myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
 	  myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
+
+
+	  //Initialize servo and sendo to pos 60
+  servo.attach(pinServo);
+  servo.write(100);
+
+
 
  	//Timer stuff
 /*cli();//stop interrupts
@@ -236,15 +243,15 @@ void setup(void){
   // enable timer compare interrupt
   TIMSK1 |= (1 << OCIE1A);
 
-
+	
 sei();//allow interrupts
 */
 
-	  Timer1.initialize(2778);
+	 /* Timer1.initialize(2778);
 	  Timer1.attachInterrupt(getSensors);
   //interrupt every 1ms
 
-	  Timer1.start();
+	  Timer1.start();*/
 	}
 /////////////////////////////////////end setup
 
@@ -267,7 +274,7 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 }sendSHORT;
 
 void loop(void){////////////////////////////////////////////////////////////////////////////
-	//Record num of points to print
+	/*//Record num of points to print
 	saveLIDAR=digitalRead(pinSAVElidar);
 	if(saveLIDAR==1 && printLIDARdata==0){
 		numPrintLidar=numPointsLIDAR;
@@ -313,7 +320,17 @@ void loop(void){////////////////////////////////////////////////////////////////
 
 				digitalWrite(L1,LOW);
 			}
-		//}
+		//}*/
+	// Take a measurement with receiver bias correction and print to serial terminal
+  Serial.println(distanceFast(true));
+
+  // Take 99 measurements without receiver bias correction and print to serial terminal
+  for(int i = 0; i < 99; i++)
+  {
+    Serial.println(distanceFast(false));
+  }
+
+	
 	}
 
 

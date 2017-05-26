@@ -44,7 +44,7 @@ int pos = lowAngle, lastPos;
 
 //Brushless
 #define pinBrushless 12
-
+  
 //MQ7
 #define readPeriodMQ7 90000 //ad more features to mq7
 #define heatingTime 2 //2*baseTime
@@ -307,7 +307,7 @@ void changeAngle(){
 
 
   //digitalWrite(pinSaveLIDAR,HIGH);  //disables pinSave on next interrupt
-  /*lastTime=currentTime;
+  lastTime=currentTime;
   currentTime=millis();
 
   
@@ -320,7 +320,7 @@ void changeAngle(){
     if(currentTime-lastTime > 630 && currentTime-lastTime <680){
       canDo=1;
 
-    }/*else if( currentTime-lastTime <= 630){
+    }else if( currentTime-lastTime <= 630){
       velocity=(velocity > 0)?(velocity-1):(0);
       // if (velocity == 0){
       //   velocity=0;
@@ -331,8 +331,8 @@ void changeAngle(){
     }else if( currentTime-lastTime >= 680){
       velocity++;
       canDo=0;
-    }*/
-/*
+    }
+
       defineVelocity(velocity,brushless);
 
     //Servo angle set
@@ -361,7 +361,7 @@ void changeAngle(){
         servo.write(pos);
       }
 
-    }*/
+    }
   #ifdef DEBUG
   digitalWrite(L4,LOW);
   #endif
