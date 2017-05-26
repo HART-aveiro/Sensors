@@ -244,7 +244,7 @@ void setup(void){
     ///////////////////////////////////////////
    #endif
   
-  pinMode(pinPhotoDiode, INPUT);
+  //pinMode(pinPhotoDiode, INPUT);
 
 
   pinMode(pinStartLIDAR,OUTPUT);
@@ -292,10 +292,11 @@ void changeAngle(){
   #ifdef DEBUG
   digitalWrite(L4,HIGH);
   #endif
-
+/*
+  timeCount=millis();
   if(timeCount-oldTime > 200){ //makes LIDAR save data
     oldTime=timeCount;
-    flagSave=digitalRead(pinPhotoDiode);
+    //flagSave=digitalRead(pinPhotoDiode);
 
     //digitalWrite(pinSaveLIDAR,LOW);
     if(flagSave==1)
@@ -303,21 +304,21 @@ void changeAngle(){
     else
       digitalWrite(pinSaveLIDAR,LOW);
     numLIDAR=0;
-  }
+   }*/
 
 
-  //digitalWrite(pinSaveLIDAR,HIGH);  //disables pinSave on next interrupt
-  lastTime=currentTime;
-  currentTime=millis();
+  // //digitalWrite(pinSaveLIDAR,HIGH);  //disables pinSave on next interrupt
+   lastTime=currentTime;
+   currentTime=millis();
 
   
 
-  if(currentTime-lastTime >100){
+   if(currentTime-lastTime >100){
   //Brushless motor speed feedback
     numLIDAR=numPointsLIDAR;
     numPointsLIDAR=0; 
 
-    if(currentTime-lastTime > 630 && currentTime-lastTime <680){
+    if(currentTime-lastTime > 630 && currentTime-lastTime <700){
       canDo=1;
 
     }else if( currentTime-lastTime <= 630){
