@@ -108,6 +108,8 @@ byte flagSend=1;
 byte flagMQ7=0;
 int tempMQ7;
 
+int val=0;
+
 
 
 
@@ -119,7 +121,7 @@ char flagFlames, flagDHT;
 */
 //volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
-int temp;
+short temp;
 byte temp2, sendBYTE, flameBYTE;
 
 int distCount=0;
@@ -160,19 +162,17 @@ void runA(void){ //function used to execute the 1st case of the interrupt (execu
   read_mpu_values();
 }
 
-int tempZ;
+//short tempZ;
 
 void runB(void){ //function used to execute the 2nd case of the interrupt (execution must be less than 1ms)
 
   compute_data();
-  temp= (short)((int) get_yaw());
+  /*temp= (short)((int) get_yaw());
+  bufMPU->add(bufMPU, &temp);*/
+  /*temp= (short)((int) get_roll());
   bufMPU->add(bufMPU, &temp);
-  temp= (short)((int) get_roll());
-  bufMPU->add(bufMPU, &temp);
-  tempZ= (int) get_pitch();
-
-  //Serial.println(tempZ);
-  bufMPU->add(bufMPU, &tempZ);  
+  temp= (short)((int) get_pitch());
+  bufMPU->add(bufMPU, &temp);*/  
 }
 
 
@@ -194,9 +194,9 @@ void runC(void){
     s2 = getFS2values();
 
   }else if(flagFLAMES3==1){
-    #ifdef DEBUG
+    /*#ifdef DEBUG
     digitalWrite(L1,HIGH);
-    #endif
+    #endif*/
     
     flagFLAMES3=0;
     s3 = getFS3values();
@@ -227,66 +227,66 @@ void runD(void){
 void setup(void){
    #ifdef DEBUG
     //Define debug LEDpins as output///////////
-  pinMode(L1,OUTPUT);
-  pinMode(L2,OUTPUT);
-  pinMode(L3,OUTPUT);
-  pinMode(L4,OUTPUT);
-  pinMode(L5,OUTPUT);
-  pinMode(L6,OUTPUT);
-  pinMode(L7,OUTPUT);
-  pinMode(L8,OUTPUT);
-  digitalWrite(L1,LOW);
-  digitalWrite(L2,LOW);
-  digitalWrite(L3,LOW);
-  digitalWrite(L4,LOW);
-  digitalWrite(L5,LOW);
-  digitalWrite(L6,LOW);
-  digitalWrite(L7,LOW);
-  digitalWrite(L8,LOW);
-    ///////////////////////////////////////////
-   #endif
-  
-  pinMode(pinPhotoDiode, INPUT);
+    pinMode(L1,OUTPUT);
+    pinMode(L2,OUTPUT);
+    pinMode(L3,OUTPUT);
+    pinMode(L4,OUTPUT);
+    pinMode(L5,OUTPUT);
+    pinMode(L6,OUTPUT);
+    pinMode(L7,OUTPUT);
+    pinMode(L8,OUTPUT);
+    digitalWrite(L1,LOW);
+    digitalWrite(L2,LOW);
+    digitalWrite(L3,LOW);
+    digitalWrite(L4,LOW);
+    digitalWrite(L5,LOW);
+    digitalWrite(L6,LOW);
+    digitalWrite(L7,LOW);
+    digitalWrite(L8,LOW);
+        ///////////////////////////////////////////
+     #endif
+    
+    pinMode(pinPhotoDiode, INPUT);
 
 
-  pinMode(pinStartLIDAR,OUTPUT);
-  pinMode(pinSaveLIDAR,OUTPUT);
-  //pinMode(pinPrintLIDAR,OUTPUT);
+    pinMode(pinStartLIDAR,OUTPUT);
+    pinMode(pinSaveLIDAR,OUTPUT);
+    //pinMode(pinPrintLIDAR,OUTPUT);
 
 
- //Serial initialization////////////////////////
-  Serial.begin(UART_BAUDRATE);
-  Serial1.begin(115200); //Serial used to send to robot group
-  Serial2.begin(UART_BAUDRATE);
+   //Serial initialization////////////////////////
+    Serial.begin(UART_BAUDRATE);
+    Serial1.begin(115200); //Serial used to send to robot group
+    Serial2.begin(UART_BAUDRATE);
 
-//MPU6050 initialization//////////////////////
-  initialize_imu();
+    //MPU6050 initialization//////////////////////
+    initialize_imu();
 
- //MQ7//////////////////////////////////
-  pinMode(togglePIN,OUTPUT);
-  digitalWrite(togglePIN,HIGH);
+   //MQ7//////////////////////////////////
+    pinMode(togglePIN,OUTPUT);
+    digitalWrite(togglePIN,HIGH);
 
-  //Initialize servo and sendo to pos 60
-  servo.attach(pinServo);
-  servo.write(pos);
+    //Initialize servo and sendo to pos 60
+    servo.attach(pinServo);
+    servo.write(pos);
 
- //initialize brushless/////////////////////////
- //set speed to 10
+   //initialize brushless/////////////////////////
+   //set speed to 10
 
-  brushless.attach(pinBrushless,1000,2000);
-  turnOn(brushless);
-  defineVelocity(velocity,brushless);
+    brushless.attach(pinBrushless,1000,2000);
+    turnOn(brushless);
+    defineVelocity(velocity,brushless);
 
- //Interrupt from photodiode
-  //attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);////////////////////////////////////////////////////////////////////////////////
+   //Interrupt from photodiode
+    //attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);////////////////////////////////////////////////////////////////////////////////
 
-  //Timer initialization///////////////////////////
-  //Timer is used for interrupt
+    //Timer initialization///////////////////////////
+    //Timer is used for interrupt
 
-  Timer3.initialize(INT_PERIOD);
-  Timer3.attachInterrupt(getSensors);
-  //interrupt every 1ms
-  Timer3.start();
+    Timer3.initialize(INT_PERIOD);
+    Timer3.attachInterrupt(getSensors);
+    //interrupt every 1ms
+    Timer3.start();
 }
 /////////////////////////////////////end setup
 
@@ -364,25 +364,25 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
   digitalWrite(pinSaveLIDAR,LOW);
 
-
-
   currentTime++;
   //currentTime=millis();
+  
 
-  if(digitalRead(pinPhotoDiode)==1){
-    if(currentTime >400){
+  if(val==HIGH){
+    val=LOW;
+    if(currentTime >630){
 
-      
+
 
     #ifdef DEBUG
-      digitalWrite(L4,HIGH);
+      digitalWrite(L5,HIGH);
     #endif
     //Brushless motor speed feedback
       numLIDAR=numPointsLIDAR;
       numPointsLIDAR=0; 
       canDo=1;
 
-      if(currentTime > 630 && currentTime <700){
+      /*if(currentTime > 630 && currentTime <700){
         canDo=1;
       }else if( currentTime<= 630){
        //velocity=(velocity > 0)?(velocity-1):(0);
@@ -397,7 +397,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
         canDo=0;
       }
 
-      defineVelocity(velocity,brushless);
+      defineVelocity(velocity,brushless);*/
 
     //Servo angle set
       if(pos>=upAngle){
@@ -425,9 +425,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
       servo.write(pos);
     //}
       currentTime=0;
-    #ifdef DEBUG
-      digitalWrite(L4,LOW);
-    #endif
+
 
     }
   }
@@ -583,8 +581,12 @@ digitalWrite(L2,LOW);
   #endif
 
   #ifdef DEBUG
+digitalWrite(L5,LOW);
+    #endif
+
+/*  #ifdef DEBUG
 digitalWrite(L1,LOW);
-  #endif
+  #endif*/
 }
 
 
@@ -599,11 +601,18 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 ////// fim das initializações para testes 
 
-//LOOP
+
+
 
 void loop(void){
 ////////////////////////////////////////////////////////////////////////////
-	if(sendMPUtoRobot==1){ //send MPU z data to robot team
+
+
+  val=digitalRead(pinPhotoDiode);//photodiode val
+
+
+
+	/*if(sendMPUtoRobot==1){ //send MPU z data to robot team
 		
 		Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255
 

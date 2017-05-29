@@ -8,6 +8,8 @@
   float angle_roll, angle_pitch, angle_yaw;
   float total_vect_acc,angle_pitch_acc,angle_roll_acc;
 
+  float sinGyZ;
+
   void start_mpu_6050(){
     Wire.setClock(400000L);
 
@@ -77,13 +79,13 @@
     angle_pitch += GyY*0.004/65.5;
     angle_yaw += GyZ*0.004/65.5;
 
-    float sinGyZ =SpeedTrig.sin(GyZ*0.000001066)*0.01745;
+    sinGyZ =SpeedTrig.sin(GyZ*0.000001066)*0.01745;
     angle_roll -= angle_pitch * sinGyZ;
     angle_pitch += angle_roll * sinGyZ;
 
     //accel data treatment
     total_vect_acc = sqrt((AcX*AcX) + (AcY*AcY) + (AcZ*AcZ));
-    angle_pitch_acc = 90-SpeedTrig.acos((float)AcX/total_vect_acc);//180/pi = 57.296
+    angle_pitch_acc = 90- SpeedTrig.acos((float)AcX/total_vect_acc);//180/pi = 57.296
     angle_roll_acc = 90-SpeedTrig.acos((float)AcY/total_vect_acc);//180/pi = 57.296
 
     angle_roll_acc -= -0.7;
