@@ -1,7 +1,6 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include "hartimu.h"
-#include "SpeedTrig.h"
 
   long AcX,AcY,AcZ,Tmp,GyX,GyY,GyZ,GyXant,GyYant,GyZant;
   long gyro_x_calc,gyro_y_calc,gyro_z_calc;
@@ -10,8 +9,6 @@
 
   void start_mpu_6050(){
     Wire.setClock(400000L);
-
-    
     //Activate the MPU-6050
     Wire.beginTransmission(0x68);                                        //Start communicating with the MPU-6050
     Wire.write(0x6B);                                                    //Send the requested starting register
@@ -43,7 +40,7 @@
     GyX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
     GyY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
     GyZ=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-    
+
   }
 
   void calibrate_mpu(){
@@ -77,14 +74,14 @@
     angle_pitch += GyY*0.004/65.5;
     angle_yaw += GyZ*0.004/65.5;
 
-    float sinGyZ =SpeedTrig.sin(GyZ*0.000001066)*0.01745;
-    angle_roll -= angle_pitch * sinGyZ;
-    angle_pitch += angle_roll * sinGyZ;
+    float singyz = sin(GyZ*0.000001066);
+    angle_roll -= angle_pitch * singyz;
+    angle_pitch += angle_roll * singyz;
 
     //accel data treatment
     total_vect_acc = sqrt((AcX*AcX) + (AcY*AcY) + (AcZ*AcZ));
-    angle_pitch_acc = 90-SpeedTrig.acos((float)AcX/total_vect_acc);//180/pi = 57.296
-    angle_roll_acc = 90-SpeedTrig.acos((float)AcY/total_vect_acc);//180/pi = 57.296
+    angle_pitch_acc = asin((float)AcX/total_vect_acc)*-57.296;//180/pi = 57.296
+    angle_roll_acc = asin((float)AcY/total_vect_acc)*57.296;//180/pi = 57.296
 
     angle_roll_acc -= -0.7;
     angle_pitch_acc -= -0.8;
@@ -110,8 +107,3 @@
   float get_yaw(){
     return angle_yaw;
   }
-
-  float get_temp(){
-    return Tmp;
-  }
-
