@@ -171,8 +171,8 @@ void runB(void){ //function used to execute the 2nd case of the interrupt (execu
   bufMPU->add(bufMPU, &temp);
   tempZ= (int) get_pitch();
 
-  Serial.println(tempZ);
-  bufMPU->add(bufMPU, &temp);  
+  //Serial.println(tempZ);
+  bufMPU->add(bufMPU, &tempZ);  
 }
 
 
@@ -246,7 +246,7 @@ void setup(void){
     ///////////////////////////////////////////
    #endif
   
-  //pinMode(pinPhotoDiode, INPUT);
+  pinMode(pinPhotoDiode, INPUT);
 
 
   pinMode(pinStartLIDAR,OUTPUT);
@@ -257,6 +257,7 @@ void setup(void){
  //Serial initialization////////////////////////
   Serial.begin(UART_BAUDRATE);
   Serial1.begin(115200); //Serial used to send to robot group
+  Serial2.begin(UART_BAUDRATE);
 
 //MPU6050 initialization//////////////////////
   initialize_imu();
@@ -277,7 +278,7 @@ void setup(void){
   defineVelocity(velocity,brushless);
 
  //Interrupt from photodiode
-  attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);
+  //attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);////////////////////////////////////////////////////////////////////////////////
 
   //Timer initialization///////////////////////////
   //Timer is used for interrupt
@@ -285,13 +286,12 @@ void setup(void){
   Timer3.initialize(INT_PERIOD);
   Timer3.attachInterrupt(getSensors);
   //interrupt every 1ms
-
   Timer3.start();
 }
 /////////////////////////////////////end setup
 
 void changeAngle(){  
-  #ifdef DEBUG
+ /* #ifdef DEBUG
   digitalWrite(L4,HIGH);
   #endif
 
@@ -300,9 +300,10 @@ void changeAngle(){
 
 
   if(currentTime-lastTime >100){
-  //Brushless motor speed feedback
+    //Brushless motor speed feedback
     numLIDAR=numPointsLIDAR;
     numPointsLIDAR=0; 
+    canDo=1;
 
     if(currentTime-lastTime > 630 && currentTime-lastTime <700){
       canDo=1;
@@ -331,16 +332,16 @@ void changeAngle(){
     }
 
     //Changes servo angle if time canDo flag is set
-    if(canDo==1){
-      canDo = 0;
-      lastPos=pos;
-      if(sDirection==1){
+    /*if(canDo==1){
+      canDo = 0;*/
+      //lastPos=pos;
+     /* if(sDirection==1){
         pos++;
       }
       if(sDirection==0){
         pos--;
       }
-    }
+    //}
 
     //Only writes position to servo if the difference between positions is one
     //Prevents false skips....
@@ -351,7 +352,7 @@ void changeAngle(){
   }
   #ifdef DEBUG
   digitalWrite(L4,LOW);
-  #endif
+  #endif*/
 }
 
 
@@ -363,26 +364,98 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
 
   digitalWrite(pinSaveLIDAR,LOW);
 
+
+
+  currentTime++;
+  //currentTime=millis();
+
+  if(digitalRead(pinPhotoDiode)==1){
+    if(currentTime >400){
+
+      
+
+    #ifdef DEBUG
+      digitalWrite(L4,HIGH);
+    #endif
+    //Brushless motor speed feedback
+      numLIDAR=numPointsLIDAR;
+      numPointsLIDAR=0; 
+      canDo=1;
+
+      if(currentTime > 630 && currentTime <700){
+        canDo=1;
+      }else if( currentTime<= 630){
+       //velocity=(velocity > 0)?(velocity-1):(0);
+        if (velocity == 0){
+          velocity=0;
+        }else{
+          velocity--;
+        }
+        canDo=0;
+      }else if( currentTime>= 680){
+        velocity++;
+        canDo=0;
+      }
+
+      defineVelocity(velocity,brushless);
+
+    //Servo angle set
+      if(pos>=upAngle){
+        sDirection=0;
+      }
+      if(pos<=lowAngle){
+        sDirection=1;
+      }
+
+    //Changes servo angle if time canDo flag is set
+    /*if(canDo==1){
+      canDo = 0;*/
+      //lastPos=pos;
+      if(sDirection==1){
+        pos++;
+      }
+      if(sDirection==0){
+        pos--;
+      }
+    //}
+
+    //Only writes position to servo if the difference between positions is one
+    //Prevents false skips....
+    // if(lastPos-pos==1 || pos-lastPos==1){
+      servo.write(pos);
+    //}
+      currentTime=0;
+    #ifdef DEBUG
+      digitalWrite(L4,LOW);
+    #endif
+
+    }
+  }
+
+
+
+
+
   //digitalWrite(pinSaveLIDAR,LOW);  //disables pinSave on next interrupt
 
 
-  
+
   if(timeCount% readPeriodFLAMES == 0){
-  	sendMPUtoRobot=1;
-    flagFLAMES1 =1;
-    flagFLAMES2 =1;
-    flagFLAMES3 =1;
-    flagCAlCflames=1;
-  }
+   sendMPUtoRobot=1;
+   flagFLAMES1 =1;
+   flagFLAMES2 =1;
+   flagFLAMES3 =1;
+   flagCAlCflames=1;
+ }
 
-  if( timeCount%(readPeriodMQ7)==0){
-    flagMQ7=1;
-  }
+ if( timeCount%(readPeriodMQ7)==0){
+  flagMQ7=1;
+}
 
-  if(timeCount < MAX_TIME_COUNT)
-    timeCount++;
-  else
-    timeCount=0;
+if(timeCount < MAX_TIME_COUNT)
+  timeCount++;
+else
+  timeCount=0;
 
   /*if(timeCount-oldTime > 200){ //makes LIDAR save data
     oldTime=timeCount;
@@ -396,25 +469,25 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   numLIDAR=0;
 }*/
 
-  switch(countInt){
-    case 0:
+switch(countInt){
+  case 0:
 
-    runA();
-    flagSend=0;
-    break;
-    case 1:
-    runB();
+  runA();
+  flagSend=0;
+  break;
+  case 1:
+  runB();
 
-    break;
-    case 2:
+  break;
+  case 2:
 
 
-    runC();
-    flagSend=1;
+  runC();
+  flagSend=1;
 
-    break;
-    case 3:
-    digitalWrite(pinStartLIDAR,HIGH);
+  break;
+  case 3:
+  digitalWrite(pinStartLIDAR,HIGH);
 
 
     //runD();.
@@ -488,16 +561,16 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
       }
     } */
 
-    break;
-    default:
+  break;
+  default:
 
-    break;
-  }
+  break;
+}
 
-  if(countInt <3)
-    countInt++;
-  else
-    countInt=0;
+if(countInt <3)
+  countInt++;
+else
+  countInt=0;
 
   //countInt=(countInt<3)?(countInt++):(0);//verifica se countInt <3 se for incrementa se não passa para 0;
   //RUNNING LIST
@@ -506,11 +579,11 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   //3 - analogSensor
 
   #ifdef DEBUG
-  digitalWrite(L2,LOW);
+digitalWrite(L2,LOW);
   #endif
 
   #ifdef DEBUG
-  digitalWrite(L1,LOW);
+digitalWrite(L1,LOW);
   #endif
 }
 
@@ -530,7 +603,7 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 void loop(void){
 ////////////////////////////////////////////////////////////////////////////
-	/*if(sendMPUtoRobot==1){ //send MPU z data to robot team
+	if(sendMPUtoRobot==1){ //send MPU z data to robot team
 		
 		Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255
 
@@ -614,7 +687,7 @@ void loop(void){
       Serial.write(sendSHORT.send2[1]);  
       Serial.write(sendSHORT.send2[0]);
     }
-  } */
+  } 
 
 
 

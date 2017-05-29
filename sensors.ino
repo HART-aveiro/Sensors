@@ -274,7 +274,7 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 }sendSHORT;
 
 void loop(void){////////////////////////////////////////////////////////////////////////////
-	/*//Record num of points to print
+	//Record num of points to print
 	saveLIDAR=digitalRead(pinSAVElidar);
 	if(saveLIDAR==1 && printLIDARdata==0){
 		numPrintLidar=numPointsLIDAR;
@@ -320,15 +320,15 @@ void loop(void){////////////////////////////////////////////////////////////////
 
 				digitalWrite(L1,LOW);
 			}
-		//}*/
+		//}
 	// Take a measurement with receiver bias correction and print to serial terminal
-  Serial.println(distanceFast(true));
+  /*Serial.println(distanceFast(true));
 
   // Take 99 measurements without receiver bias correction and print to serial terminal
   for(int i = 0; i < 99; i++)
   {
     Serial.println(distanceFast(false));
-  }
+  }*/
 
 	
 	}
