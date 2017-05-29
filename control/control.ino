@@ -44,7 +44,7 @@ int pos = lowAngle, lastPos;
 
 //Brushless
 #define pinBrushless 12
-  
+
 //MQ7
 #define readPeriodMQ7 90000 //ad more features to mq7
 #define heatingTime 2 //2*baseTime
@@ -177,6 +177,7 @@ void runB(void){ //function used to execute the 2nd case of the interrupt (execu
 
 
 void runC(void){
+  noInterrupts();
   if(flagFLAMES1==1){
    /* #ifdef DEBUG
       digitalWrite(L1,HIGH);
@@ -212,6 +213,7 @@ void runC(void){
     bufMQ7->add(bufMQ7,&tempMQ7);
 
   }
+  interrupts();
 }
 
 void runD(void){
@@ -292,28 +294,12 @@ void changeAngle(){
   #ifdef DEBUG
   digitalWrite(L4,HIGH);
   #endif
-/*
-  timeCount=millis();
-  if(timeCount-oldTime > 200){ //makes LIDAR save data
-    oldTime=timeCount;
-    //flagSave=digitalRead(pinPhotoDiode);
 
-    //digitalWrite(pinSaveLIDAR,LOW);
-    if(flagSave==1)
-      digitalWrite(pinSaveLIDAR,HIGH);
-    else
-      digitalWrite(pinSaveLIDAR,LOW);
-    numLIDAR=0;
-   }*/
+  lastTime=currentTime;
+  currentTime=millis();
 
 
-  // //digitalWrite(pinSaveLIDAR,HIGH);  //disables pinSave on next interrupt
-   lastTime=currentTime;
-   currentTime=millis();
-
-  
-
-   if(currentTime-lastTime >100){
+  if(currentTime-lastTime >100){
   //Brushless motor speed feedback
     numLIDAR=numPointsLIDAR;
     numPointsLIDAR=0; 
@@ -322,47 +308,47 @@ void changeAngle(){
       canDo=1;
 
     }else if( currentTime-lastTime <= 630){
-      velocity=(velocity > 0)?(velocity-1):(0);
-      // if (velocity == 0){
-      //   velocity=0;
-      // }else{
-      //   velocity--;
-      // }
+      //velocity=(velocity > 0)?(velocity-1):(0);
+      if (velocity == 0){
+        velocity=0;
+      }else{
+        velocity--;
+      }
       canDo=0;
     }else if( currentTime-lastTime >= 680){
       velocity++;
       canDo=0;
     }
 
-      defineVelocity(velocity,brushless);
+    defineVelocity(velocity,brushless);
 
     //Servo angle set
-      if(pos>=upAngle){
-        sDirection=0;
-      }
-      if(pos<=lowAngle){
-        sDirection=1;
-      }
+    if(pos>=upAngle){
+      sDirection=0;
+    }
+    if(pos<=lowAngle){
+      sDirection=1;
+    }
 
     //Changes servo angle if time canDo flag is set
-      if(canDo==1){
-        canDo = 0;
-        lastPos=pos;
-        if(sDirection==1){
-          pos++;
-        }
-        if(sDirection==0){
-          pos--;
-        }
+    if(canDo==1){
+      canDo = 0;
+      lastPos=pos;
+      if(sDirection==1){
+        pos++;
       }
+      if(sDirection==0){
+        pos--;
+      }
+    }
 
     //Only writes position to servo if the difference between positions is one
     //Prevents false skips....
-      if(lastPos-pos==1 || pos-lastPos==1){
-        servo.write(pos);
-      }
+    // if(lastPos-pos==1 || pos-lastPos==1){
+    servo.write(pos);
+    //}
 
-    }
+  }
   #ifdef DEBUG
   digitalWrite(L4,LOW);
   #endif
@@ -544,7 +530,7 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 void loop(void){
 ////////////////////////////////////////////////////////////////////////////
-	if(sendMPUtoRobot==1){ //send MPU z data to robot team
+	/*if(sendMPUtoRobot==1){ //send MPU z data to robot team
 		
 		Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255
 
@@ -628,7 +614,7 @@ void loop(void){
       Serial.write(sendSHORT.send2[1]);  
       Serial.write(sendSHORT.send2[0]);
     }
-  } 
+  } */
 
 
 
