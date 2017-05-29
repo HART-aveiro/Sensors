@@ -211,7 +211,7 @@ void setup(void){
 	//pinMode(pinPRINTlidar, INPUT);
 
 	//Serial initialization////////////////////////
-	Serial.begin(115200 );
+	Serial.begin(UART_BAUDRATE);
 
 	//Lidar stuff
 
@@ -223,8 +223,8 @@ void setup(void){
 
 
 	  //Initialize servo and sendo to pos 60
-  servo.attach(pinServo);
-  servo.write(100);
+  /*servo.attach(pinServo);
+  servo.write(100);*/
 
 
 
@@ -314,7 +314,7 @@ void loop(void){////////////////////////////////////////////////////////////////
 		//if(flagLIDAR=1){
 			digitalWrite(L1,HIGH);
 				flagLIDAR=0;//is controllled by an interrupt
-				Serial.println(distanceFast(false));
+				distance = (short)(distanceFast(false));
 				bufLIDAR->add(bufLIDAR,&distance);
 				numPointsLIDAR++;
 
