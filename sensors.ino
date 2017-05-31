@@ -304,7 +304,7 @@ void loop(void){////////////////////////////////////////////////////////////////
 
 				Serial.write(sendSHORT.send2[1]);  
 				Serial.write(sendSHORT.send2[0]);
-			}
+			} 
 		}
 	}
 
