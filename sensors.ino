@@ -25,13 +25,6 @@
 ////////////////
 
 #define idLIDAR 0x01
-//#define idDHT 0x02
-//#define idMPU 0x03
-//#define idMQ7 0x05
-//#define idFLAMES 0x04
-
-//PhotoDiode
-//#define pinPhotoDiode 3
 
 //Servo
 #define pinServo 9
@@ -41,21 +34,6 @@
 int canDo;
 int sDirection=0;
 int pos = lowAngle, lastPos;
-
-//Brushless
-//#define pinBrushless 12
-
-//MQ7
-//#define readPeriodMQ7 90000 //ad more features to mq7
-//#define heatingTime 2 //2*baseTime
-// #define readingTime 3 //3*readingTime
-// #define baseTime 15000
-// #define togglePIN 4
-// #define readPIN A3
-
-// //FLAMES
-// #define readPeriodFLAMES 500
-
 
 #ifdef DEBUG
 //Debug LEDs
@@ -71,42 +49,10 @@ int pos = lowAngle, lastPos;
 
 //BUFFERS
 //RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
-RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
+RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 3000);
 //RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 //RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
 //RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
-
-//time variables for photodiode interrupt
-//long lastTime, currentTime;
-		/*
-		//counter variables for interrupts
-		int countInt=0; //Counter for timer 3 interrupt
-		int timeCount=0;
-
-		//flags to read and cal FLAME sensors
-		byte flagFLAMESdone =0;
-		byte flagCAlCflames=0;
-		byte flagFLAMES1=0;
-		byte flagFLAMES2=0;
-		byte flagFLAMES3=0;
-
-		byte s1, s2, s3;
-
-		byte flagSend=1;
-
-		//flag to run MQ7 reading
-		byte flagMQ7=0;
-		int tempMQ7;
-
-		//temporary vartiable for exchange data between variables
-		short temp;
-		byte temp2, sendBYTE, flameBYTE;
-
-		int distCount=0;
-		short dist;
-
-		int i=0; // temporary val
-		*/
 
 //INITS
 //LIDAR
@@ -122,14 +68,6 @@ short distance=0;
 int numPointsLIDAR, numPrintLidar;
 int printNum=0;
 int toggle2=0;
-
-//Servo
-PWMServo servo;
-
-//Brushless
-//PWMServo brushless;
-//int velocity=10;
-
 
 // Read distance. The approach is to poll the status register until the device goes
 // idle after finishing a measurement, send a new measurement command, then read the
@@ -183,7 +121,6 @@ int distanceFast(bool biasCorrection){
 	return distance;
 }
 
-void getSensors();
 
 void setup(void){
   #ifdef DEBUG
@@ -204,6 +141,8 @@ void setup(void){
 	digitalWrite(L6,LOW);
 	digitalWrite(L7,LOW);
 	digitalWrite(L8,LOW);
+	pinMode(13,OUTPUT);
+	digitalWrite(13,LOW);
     ///////////////////////////////////////////
   #endif
 	pinMode(pinSAVElidar, INPUT);
@@ -221,72 +160,49 @@ void setup(void){
 	  myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
 	  myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
 
-
-	  //Initialize servo and sendo to pos 60
-  /*servo.attach(pinServo);
-  servo.write(100);*/
-
-
-
- 	//Timer stuff
-/*cli();//stop interrupts
-	   //set timer2 interrupt at 8kHz
-  TCCR1A = 0;// set entire TCCR2A register to 0
-  TCCR1B = 0;// same for TCCR2B
-  TCNT1  = 0;//initialize counter value to 0
-  // set compare match register for 8khz increments
-  OCR1A = 170;// = (16*10^6) / (405*8) - 1 (must be <256) 4938  4954
-  // turn on CTC mode
-  TCCR1A |= (1 << WGM11);
-  // Set CS21 bit for 8 prescaler
-  TCCR1B |= (1 << CS12);//|(1<<CS10);   
-  // enable timer compare interrupt
-  TIMSK1 |= (1 << OCIE1A);
-
-	
-sei();//allow interrupts
-*/
-
-	 /* Timer1.initialize(2778);
-	  Timer1.attachInterrupt(getSensors);
-  //interrupt every 1ms
-
-	  Timer1.start();*/
-	}
-/////////////////////////////////////end setup
-
-void getSensors(){//timer1 interrupt 8kHz toggles pin 9
-	//TCNT1=0;
-	#ifdef DEBUG
-	digitalWrite(13,HIGH);
-	#endif
-	flagLIDAR=1;
-	#ifdef DEBUG
-	analogRead(A0);
-	digitalWrite(13,LOW);
-	#endif
 }
-
+/////////////////////////////////////end setup
 
 union sendShort{    //definition of data typre to be able to separate data bytes
 	short send1;
 	byte send2[2];
 }sendSHORT;
-
+int test =0;
 void loop(void){////////////////////////////////////////////////////////////////////////////
+	#ifdef DEBUG
+		/*if(printLIDARdata==1)
+			digitalWrite(13,HIGH);
+		else
+			digitalWrite(13,LOW);*/
+		//digitalWrite(13,digitalRead(pinSAVElidar));
+
+	#endif
+
+	/*
 	//Record num of points to print
-	saveLIDAR=digitalRead(pinSAVElidar);
+	//saveLIDAR=digitalRead(pinSAVElidar);
+		if(digitalRead(pinSAVElidar)==HIGH){
+			saveLIDAR=1;
+			//digitalWrite(13,HIGH);
+		}else{
+			saveLIDAR=0;
+			//digitalWrite(13,LOW);
+		}
+
+
+
 	if(saveLIDAR==1 && printLIDARdata==0){
 		numPrintLidar=numPointsLIDAR;
 		printLIDARdata=1;
 		printNum=numPrintLidar;
-		Serial.write(printNum);
+		//Serial.write(printNum);
 	}
-
+*/
 	//Print section
 	//printLIDARdata=digitalRead(pinPRINTlidar);
-	if( printLIDARdata==1){
+	/*if( printLIDARdata==1){
 		if(numPrintLidar > 100){
+			digitalWrite(13,HIGH);
 			if(Serial.availableForWrite() > 16){// numPrintLidar){
 
 				if(printNum==0){
@@ -301,25 +217,49 @@ void loop(void){////////////////////////////////////////////////////////////////
 				}
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-
-				Serial.write(sendSHORT.send2[1]);  
-				Serial.write(sendSHORT.send2[0]);
+				digitalWrite(13,LOW);
+				Serial.println(sendSHORT.send1);
 			}
 		}
+	}*/
+
+	if(digitalRead(pinSTARTlidar)==HIGH){
+			startLIDAR=1;
+			digitalWrite(13,HIGH);
+		}else{
+			startLIDAR=0;
+			digitalWrite(13,LOW);
 	}
 
 	//Measurement section
-	startLIDAR=digitalRead(pinSTARTlidar);
-	if(startLIDAR==1){
-		//if(flagLIDAR=1){
-			digitalWrite(L1,HIGH);
-				flagLIDAR=0;//is controllled by an interrupt
-				distance = (short)(distanceFast(false));
-				bufLIDAR->add(bufLIDAR,&distance);
-				numPointsLIDAR++;
+	//startLIDAR=digitalRead(pinSTARTlidar);
+	//if(startLIDAR==1){
+		// if(flagLIDAR=1){
+		digitalWrite(L1,HIGH);
+		//flagLIDAR=0;//is controllled by an interrupt
+		//if(numPointsLIDAR%100==0)
+		//	distance = (distanceFast(true));
+		//else
+			distance = (distanceFast(false));
 
-				digitalWrite(L1,LOW);
-			}
+
+		//Serial.println(distance);
+		test = distance;
+		//RingBufAdd(bufLIDAR,&distance);
+		bufLIDAR->add(bufLIDAR,&test);
+	//	numPointsLIDAR++;
+		delay(10000);
+	//	distance=0;
+		//bufLIDAR->pull(bufLIDAR,&distance);
+		Serial.println(distance);
+
+
+		digitalWrite(L1,LOW);
+		//delay(10);
+	//}
+
+
+	
 		//}
 	// Take a measurement with receiver bias correction and print to serial terminal
   /*Serial.println(distanceFast(true));
@@ -331,7 +271,7 @@ void loop(void){////////////////////////////////////////////////////////////////
   }*/
 
 	
-	}
+}
 
 
 
