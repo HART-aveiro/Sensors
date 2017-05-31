@@ -49,7 +49,7 @@ int pos = lowAngle, lastPos;
 
 //BUFFERS
 //RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
-RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 3000);
+RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 700);
 //RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 //RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
 //RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
@@ -119,8 +119,11 @@ int distanceFast(bool biasCorrection){
 
   	// Return the measured distance
 	return distance;
+
+
 }
 
+int test =0;
 
 void setup(void){
   #ifdef DEBUG
@@ -152,6 +155,13 @@ void setup(void){
 	//Serial initialization////////////////////////
 	Serial.begin(UART_BAUDRATE);
 
+	test=(bufLIDAR->add(bufLIDAR,&distance));
+	if(test >=0){
+		digitalWrite(13,HIGH);
+	}else
+	digitalWrite(13,LOW);
+
+
 	//Lidar stuff
 
 	  myLidarLite.begin(0, true); // Set configuration to default and I2C to 400 kHz
@@ -160,14 +170,15 @@ void setup(void){
 	  myLidarLite.write(0x04, 0b00000100); // Use non-default reference acquisition count
 	  myLidarLite.write(0x12, 0x03); // Reference acquisition count of 3 (default is 5)
 
-}
+	}
 /////////////////////////////////////end setup
 
 union sendShort{    //definition of data typre to be able to separate data bytes
 	short send1;
 	byte send2[2];
 }sendSHORT;
-int test =0;
+
+
 void loop(void){////////////////////////////////////////////////////////////////////////////
 	#ifdef DEBUG
 		/*if(printLIDARdata==1)
@@ -178,29 +189,29 @@ void loop(void){////////////////////////////////////////////////////////////////
 
 	#endif
 
-	/*
+	
 	//Record num of points to print
 	//saveLIDAR=digitalRead(pinSAVElidar);
-		if(digitalRead(pinSAVElidar)==HIGH){
-			saveLIDAR=1;
-			//digitalWrite(13,HIGH);
-		}else{
-			saveLIDAR=0;
-			//digitalWrite(13,LOW);
-		}
+	if(digitalRead(pinSAVElidar)==HIGH){
+		saveLIDAR=1;
+		digitalWrite(13,HIGH);
+	}else{
+		saveLIDAR=0;
+		digitalWrite(13,LOW);
+	}
 
 
 
-	if(saveLIDAR==1 && printLIDARdata==0){
+	if(saveLIDAR==1){
 		numPrintLidar=numPointsLIDAR;
 		printLIDARdata=1;
 		printNum=numPrintLidar;
 		//Serial.write(printNum);
 	}
-*/
+
 	//Print section
 	//printLIDARdata=digitalRead(pinPRINTlidar);
-	/*if( printLIDARdata==1){
+	if( printLIDARdata==1){
 		if(numPrintLidar > 100){
 			digitalWrite(13,HIGH);
 			if(Serial.availableForWrite() > 16){// numPrintLidar){
@@ -210,69 +221,90 @@ void loop(void){////////////////////////////////////////////////////////////////
 					//Serial.write(0x00);
 
 					//Serial.write(0x00);
-					
+
 					//Serial.write(idLIDAR);
 				}else{
 					printNum--;
 				}
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-
-				digitalWrite(13,LOW);
 				Serial.println(sendSHORT.send1);
+
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+				
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+				
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+				
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+				
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+				
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+				
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.println(sendSHORT.send1);
+				
+				digitalWrite(13,LOW);
 			}
 
 		}
-	}*/
+	}
 
 	if(digitalRead(pinSTARTlidar)==HIGH){
-			startLIDAR=1;
-			digitalWrite(13,HIGH);
-		}else{
-			startLIDAR=0;
-			digitalWrite(13,LOW);
+		startLIDAR=1;
+		//digitalWrite(13,HIGH);
+	}else{
+		startLIDAR=0;
+		//digitalWrite(13,LOW);
 	}
 
 	//Measurement section
 	//startLIDAR=digitalRead(pinSTARTlidar);
-	//if(startLIDAR==1){
+	if(startLIDAR==1){
 		// if(flagLIDAR=1){
 		digitalWrite(L1,HIGH);
 		//flagLIDAR=0;//is controllled by an interrupt
 		//if(numPointsLIDAR%100==0)
 		//	distance = (distanceFast(true));
 		//else
-			distance = (distanceFast(false));
+		distance = (distanceFast(false));
 
 
 		//Serial.println(distance);
-		test = distance;
-		//RingBufAdd(bufLIDAR,&distance);
-		bufLIDAR->add(bufLIDAR,&test);
-	//	numPointsLIDAR++;
-		delay(10000);
-	//	distance=0;
-		//bufLIDAR->pull(bufLIDAR,&distance);
-		Serial.println(distance);
+		//test = distance;
+
+		test=(bufLIDAR->add(bufLIDAR,&distance));
+		/*if(test >=0){
+			digitalWrite(13,HIGH);
+		}else
+		digitalWrite(13,LOW);*/
+		//bufLIDAR->add(bufLIDAR,&distance);
+		numPointsLIDAR++;
+		//delay(10000);
+		/*distance=0;
+		bufLIDAR->pull(bufLIDAR,&distance);
+		Serial.println(distance);*/
 
 
 		digitalWrite(L1,LOW);
+
+		//digitalWrite(13,LOW);
 		//delay(10);
-	//}
+	}
 
-
-	
-		//}
-	// Take a measurement with receiver bias correction and print to serial terminal
-  /*Serial.println(distanceFast(true));
-
-  // Take 99 measurements without receiver bias correction and print to serial terminal
-  for(int i = 0; i < 99; i++)
-  {
-    Serial.println(distanceFast(false));
-  }*/
-
-	
 }
 
 
