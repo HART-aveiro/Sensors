@@ -1,15 +1,11 @@
 #include <Arduino.h>
 #include <RingBuf.h>
-//#include <TimerThree.h>
 #include <TimerOne.h>
-//#include "hartimu.h"
 #include <Wire.h>
-//#include <DHT.h>
 #include <PWMServo.h> 
-//#include "brsh.h"
-//#include "flamesensor.h"
 #include <LIDARLite.h>
 
+short panda=25000;
 //Things to change
 #define DEBUG 1
 //to exit debug mode delete previous line ( #define DEBUG 1 )
@@ -19,7 +15,6 @@
 #define MAX_TIME_COUNT 90000 //90 segundos
 
 #define pinSTARTlidar 7
-//#define pinPRINTlidar 7
 #define pinSAVElidar 8
 
 ////////////////
@@ -35,24 +30,9 @@ int canDo;
 int sDirection=0;
 int pos = lowAngle, lastPos;
 
-#ifdef DEBUG
-//Debug LEDs
-#define L1 11 //DHT
-#define L2 31 //MPU
-#define L3 32 //Brushless
-#define L4 33 //MQ7
-#define L5 34 //FIRE
-#define L6 35 //LIDAR
-#define L7 36 ////ERROR/////////////////////////
-#define L8 37 ////OK////////////////////////////
-#endif
 
 //BUFFERS
-//RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
 RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 700);
-//RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
-//RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
-//RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
 
 //INITS
 //LIDAR
@@ -126,28 +106,6 @@ int distanceFast(bool biasCorrection){
 int test =0;
 
 void setup(void){
-  #ifdef DEBUG
-    //Define debug LEDpins as output///////////
-	pinMode(L1,OUTPUT);
-	pinMode(L2,OUTPUT);
-	pinMode(L3,OUTPUT);
-	pinMode(L4,OUTPUT);
-	pinMode(L5,OUTPUT);
-	pinMode(L6,OUTPUT);
-	pinMode(L7,OUTPUT);
-	pinMode(L8,OUTPUT);
-	digitalWrite(L1,LOW);
-	digitalWrite(L2,LOW);
-	digitalWrite(L3,LOW);
-	digitalWrite(L4,LOW);
-	digitalWrite(L5,LOW);
-	digitalWrite(L6,LOW);
-	digitalWrite(L7,LOW);
-	digitalWrite(L8,LOW);
-	pinMode(13,OUTPUT);
-	digitalWrite(13,LOW);
-    ///////////////////////////////////////////
-  #endif
 	pinMode(pinSAVElidar, INPUT);
 	pinMode(pinSTARTlidar, INPUT);
 	//pinMode(pinPRINTlidar, INPUT);
@@ -179,17 +137,18 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 }sendSHORT;
 
 
-void loop(void){////////////////////////////////////////////////////////////////////////////
-	#ifdef DEBUG
-		/*if(printLIDARdata==1)
-			digitalWrite(13,HIGH);
-		else
-			digitalWrite(13,LOW);*/
-		//digitalWrite(13,digitalRead(pinSAVElidar));
+void loop(void){///////
+	if(panda==25050)
+		panda=25000;
+	panda++;
+	test=(bufLIDAR->add(bufLIDAR,&panda));
+	bufLIDAR->pull(bufLIDAR, &sendSHORT);
+	Serial.println(sendSHORT.send1);
+	//Serial.write(sendSHORT.send2[0]);
+	//Serial.write(sendSHORT.send2[1]);
 
-	#endif
 
-	
+/*	
 	//Record num of points to print
 	//saveLIDAR=digitalRead(pinSAVElidar);
 	if(digitalRead(pinSAVElidar)==HIGH){
@@ -211,10 +170,10 @@ void loop(void){////////////////////////////////////////////////////////////////
 
 	//Print section
 	//printLIDARdata=digitalRead(pinPRINTlidar);
-	if( printLIDARdata==1){
+	if(printLIDARdata==1){
 		if(numPrintLidar > 100){
 			digitalWrite(13,HIGH);
-			if(Serial.availableForWrite() > 16){// numPrintLidar){
+			if(Serial.availableForWrite() > 16){
 
 				if(printNum==0){
 					printLIDARdata=0;
@@ -228,83 +187,63 @@ void loop(void){////////////////////////////////////////////////////////////////
 				}
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
-				
-				digitalWrite(13,LOW);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 			}
-
 		}
 	}
 
 	if(digitalRead(pinSTARTlidar)==HIGH){
 		startLIDAR=1;
-		//digitalWrite(13,HIGH);
 	}else{
 		startLIDAR=0;
-		//digitalWrite(13,LOW);
 	}
 
 	//Measurement section
 	//startLIDAR=digitalRead(pinSTARTlidar);
 	if(startLIDAR==1){
-		// if(flagLIDAR=1){
-		digitalWrite(L1,HIGH);
-		//flagLIDAR=0;//is controllled by an interrupt
-		//if(numPointsLIDAR%100==0)
-		//	distance = (distanceFast(true));
-		//else
 		distance = (distanceFast(false));
-
-
-		//Serial.println(distance);
-		//test = distance;
-
 		test=(bufLIDAR->add(bufLIDAR,&distance));
-		/*if(test >=0){
-			digitalWrite(13,HIGH);
-		}else
-		digitalWrite(13,LOW);*/
-		//bufLIDAR->add(bufLIDAR,&distance);
+		
 		numPointsLIDAR++;
-		//delay(10000);
-		/*distance=0;
-		bufLIDAR->pull(bufLIDAR,&distance);
-		Serial.println(distance);*/
-
-
-		digitalWrite(L1,LOW);
-
-		//digitalWrite(13,LOW);
-		//delay(10);
 	}
-
+*/
 }
 
 

@@ -70,7 +70,7 @@ int pos = lowAngle, lastPos;
 #ifdef DEBUG
 //Debug LEDs
 #define L1 30 //DHT
-#define L2 31 //MPU
+#define L2 31 //interrupções
 #define L3 32 //Brushless
 #define L4 33 //MQ7
 #define L5 34 //FIRE
@@ -81,7 +81,7 @@ int pos = lowAngle, lastPos;
 
 //BUFFERS
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
-RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
+RingBuf *bufLIDAR = RingBuf_new(sizeof(unsigned short), 2000);
 //RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
 RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
@@ -192,7 +192,8 @@ void runC(void){
 
   }else if(flagFLAMES3==1){
     /*#ifdef DEBUG
-    digitalWrite(L1,HIGH);
+    digitalWrite(L1,HIGH);24929
+
     #endif*/
 
     flagFLAMES3=0;
@@ -246,7 +247,7 @@ void setup(void){
 
 
   //Serial initialization////////////////////////
-  Serial.begin(UART_BAUDRATE);
+    Serial.begin(UART_BAUDRATE);
     Serial1.begin(115200); //Serial used to send to robot group
     Serial2.begin(UART_BAUDRATE);
 
@@ -300,6 +301,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     #ifdef DEBUG
       digitalWrite(L5,HIGH);
     #endif
+      
       digitalWrite(pinSaveLIDAR,HIGH);
       flagSave=1;
       //Brushless motor speed feedback
@@ -378,17 +380,15 @@ if(timeCount% readPeriodFLAMES == 0){
   else
     timeCount=0;
 
-  /*if(timeCount-oldTime > 200){ //makes LIDAR save data
-    oldTime=timeCount;
-    flagSave=digitalRead(pinPhotoDiode);
-    if(flagSave==1)
-      digitalWrite(pinSaveLIDAR,HIGH);
-    else
-
-      digitalWrite(pinSaveLIDAR,LOW);
-
-  numLIDAR=0;
-}*/
+ // if(timeCount-oldTime > 200){ //makes LIDAR save data
+ //   oldTime=timeCount;
+ //   flagSave=digitalRead(pinPhotoDiode);
+ //   if(flagSave==1)
+ //   digitalWrite(pinSaveLIDAR,HIGH);
+ // else
+ //   digitalWrite(pinSaveLIDAR,LOW);
+ //   numLIDAR=0;
+ // }
 
 switch(countInt){
   case 0:
@@ -431,14 +431,11 @@ digitalWrite(L2,LOW);
 digitalWrite(L5,LOW);
     #endif
 
-/*  #ifdef DEBUG
-digitalWrite(L1,LOW);
-  #endif*/
 }
 
 
 union sendShort{    //definition of data typre to be able to separate data bytes
-  short send1;
+  unsigned short send1;
   byte send2[2];
 }sendSHORT, sendShortRobot;
 
@@ -452,6 +449,8 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 
 void loop(void){
+
+
 ////////////////////////////////////////////////////////////////////////////
   digitalWrite(pinStartLIDAR,HIGH);
 
@@ -460,78 +459,57 @@ void loop(void){
 
 
 
-	if(sendMPUtoRobot==1){ //send MPU z data to robot team
-		
-		Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255
+  if(sendMPUtoRobot==1){ //send MPU z data to robot team
+    
+    Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255
 
-	}
+  }
   /*
-
-	if(bufMPU->numElements(bufMPU) >3){
+  if(bufMPU->numElements(bufMPU) >3){
     while(Serial.availableForWrite()<8);
       #ifdef DEBUG
-
     Serial.print(idMPU);
     Serial.print("  ");
-
     bufMPU->pull(bufMPU, &sendSHORT);
     Serial.print(sendSHORT.send1);
-
-
     Serial.print("  ");
     bufMPU->pull(bufMPU, &sendSHORT);
     Serial.print(sendSHORT.send1);
-
     Serial.print("  ");
     bufMPU->pull(bufMPU, &sendSHORT);
     sendShortRobot=sendSHORT;
     Serial.println(sendSHORT.send1);
-
-
-
-
       #else
     Serial.write(idMPU);
-
     bufMPU->pull(bufMPU, &sendSHORT);
     Serial.write(sendSHORT.send2[1]);
     Serial.write(sendSHORT.send2[0]);
-
     bufMPU->pull(bufMPU, &sendSHORT);
     Serial.write(sendSHORT.send2[1]);
     Serial.write(sendSHORT.send2[0]);
-
     bufMPU->pull(bufMPU, &sendSHORT);
     sendShortRobot=sendSHORT;
     Serial.write(sendSHORT.send2[1]);
     Serial.write(sendSHORT.send2[0]);
-
       #endif
   }
-
   if(bufMQ7->numElements(bufMQ7) >1){
-
-
     while(Serial.availableForWrite()<2);
     Serial.write(idMQ7);
-
     bufMQ7->pull(bufMQ7, &sendBYTE);   
     Serial.write(sendBYTE);
   }
-
     //FLAMES
-
   if (bufFLAMES-> numElements(bufFLAMES) > 1){
-
     while(Serial.availableForWrite()<2);
     Serial.write(idFLAMES);
-
     bufFLAMES->pull(bufFLAMES, &sendBYTE);    
     Serial.write(sendBYTE);
   }
 */
    //LIDAR
-
+  
+  
   if(flagSave==1 && printLIDAR==0){
     //numPrintLidar=numLIDAR;
     printLIDAR=1;
@@ -555,127 +533,101 @@ void loop(void){
         }else{
           printNum--;
         }
+        digitalWrite(L3,HIGH);
+
+        /*bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
 
         bufLIDAR->pull(bufLIDAR, &sendSHORT);
         Serial.println(sendSHORT.send1);
         //Serial.write(sendSHORT.send2[1]);  
         //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+        //Serial.write(sendSHORT.send2[1]);  
+        //Serial.write(sendSHORT.send2[0]);*/
+
+        
+        digitalWrite(L3,LOW);
       }
     //}
   } 
 
-
-
-
-
-
-
-/*
-  if(digitalRead(pinPhotoDiode)==1){
-    lastTime=currentTime;
-    currentTime=millis();
-    if(currentTime-lastTime >100){
-    #ifdef DEBUG
-      digitalWrite(L4,HIGH);
-    #endif
-  //Brushless motor speed feedback
-      numLIDAR=numPointsLIDAR;
-      numPointsLIDAR=0; 
-
-      if(currentTime-lastTime > 630 && currentTime-lastTime <680){
-        canDo=1;
-
-    }/*else if( currentTime-lastTime <= 630){
-      velocity=(velocity > 0)?(velocity-1):(0);
-      // if (velocity == 0){
-      //   velocity=0;
-      // }else{
-      //   velocity--;
-      // }
-      canDo=0;
-    }else if( currentTime-lastTime >= 680){
-      velocity++;
-      canDo=0;
-    }*/
-/*
-        defineVelocity(velocity,brushless);
-
-    //Servo angle set
-        if(pos>=upAngle){
-          sDirection=0;
-        }
-        if(pos<=lowAngle){
-          sDirection=1;
-        }
-
-    //Changes servo angle if time canDo flag is set
-        if(canDo==1){
-          canDo = 0;
-          lastPos=pos;
-          if(sDirection==1){
-            pos++;
-          }
-          if(sDirection==0){
-            pos--;
-          }
-        }
-
-    //Only writes position to servo if the difference between positions is one
-    //Prevents false skips....
-        if(lastPos-pos==1 || pos-lastPos==1){
-          servo.write(pos);
-        }
-
-      }
-  #ifdef DEBUG
-      digitalWrite(L4,LOW);
-  #endif
-    }
-
-
-     // changeAngle();
-  // ENVIAR DADOS
-  /*if (flagSend==1)
-    digitalWrite(L3,HIGH);
-  else 
-    digitalWrite(L3 ,LOW);
-
-  if(flagSend==1){
-
-  }*/
 }
 
-short incoming=0;
+unsigned short incoming=0;
+
 
 void serialEvent2(){
   digitalWrite(L8,HIGH);
-  if(Serial2.available()>10){
+  if(Serial2.available()>16){
+
     incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
+    //bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
-    //Serial.println(incoming);
+    Serial.println(incoming);
+    
     incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
+    //bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
-    //Serial.println(incoming);
+    Serial.println(incoming);
+    
     incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
+    //bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
-    //Serial.println(incoming);
+    Serial.println(incoming);
+    
     incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
+    //bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
-    //Serial.println(incoming);
+    Serial.println(incoming);
+    
     incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
+    //bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
-    //Serial.println(incoming);
+    Serial.println(incoming);
   }
 
   digitalWrite(L8,LOW);
 
 
 }
-
-
 
