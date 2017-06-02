@@ -536,6 +536,7 @@ void loop(void){
     //numPrintLidar=numLIDAR;
     printLIDAR=1;
     printNum=numLIDAR;
+
     //Serial.write(printNum);
   }
 
@@ -547,14 +548,37 @@ void loop(void){
 
         if(printNum==0){
           printLIDAR=0;
-          //Serial.write(0x00);
-
-          //Serial.write(0x00);
-          
-          //Serial.write(idLIDAR);
+          Serial.write(idLIDAR);
         }else{
-          printNum--;
+          printNum=printNum-10;
         }
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
+
+        bufLIDAR->pull(bufLIDAR, &sendSHORT);
+        Serial.println(sendSHORT.send1);
 
         bufLIDAR->pull(bufLIDAR, &sendSHORT);
         Serial.println(sendSHORT.send1);
@@ -649,7 +673,7 @@ short incoming=0;
 
 void serialEvent2(){
   digitalWrite(L8,HIGH);
-  if(Serial2.available()>10){
+  if(Serial2.available()>12){
     incoming=(Serial2.read() <<8)|(Serial2.read());
     bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
@@ -666,6 +690,21 @@ void serialEvent2(){
     bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
     //Serial.println(incoming);
+    incoming=(Serial2.read() <<8)|(Serial2.read());
+    bufLIDAR->add(bufLIDAR,&incoming);
+    numPointsLIDAR++;
+    incoming=(Serial2.read() <<8)|(Serial2.read());
+    bufLIDAR->add(bufLIDAR,&incoming);
+    numPointsLIDAR++;
+    incoming=(Serial2.read() <<8)|(Serial2.read());
+    bufLIDAR->add(bufLIDAR,&incoming);
+    numPointsLIDAR++;
+    incoming=(Serial2.read() <<8)|(Serial2.read());
+    bufLIDAR->add(bufLIDAR,&incoming);
+    numPointsLIDAR++;
+    incoming=(Serial2.read() <<8)|(Serial2.read());
+    bufLIDAR->add(bufLIDAR,&incoming);
+    numPointsLIDAR++;
     incoming=(Serial2.read() <<8)|(Serial2.read());
     bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;

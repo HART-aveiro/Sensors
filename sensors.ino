@@ -204,6 +204,7 @@ void loop(void){////////////////////////////////////////////////////////////////
 
 	if(saveLIDAR==1){
 		numPrintLidar=numPointsLIDAR;
+		numPointsLIDAR=0;
 		printLIDARdata=1;
 		printNum=numPrintLidar;
 		//Serial.write(printNum);
@@ -224,39 +225,49 @@ void loop(void){////////////////////////////////////////////////////////////////
 
 					//Serial.write(idLIDAR);
 				}else{
-					printNum--;
+					printNum=printNum-10;
 				}
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
+
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
+
+				bufLIDAR->pull(bufLIDAR, &sendSHORT);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
 				
 				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
-				
-				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
-				
-				bufLIDAR->pull(bufLIDAR, &sendSHORT);
-				Serial.println(sendSHORT.send1);
-				
+				Serial.write(sendSHORT.send2[1]);
+				Serial.write(sendSHORT.send2[0]);
+
 				digitalWrite(13,LOW);
 			}
 
