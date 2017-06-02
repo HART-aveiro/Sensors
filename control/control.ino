@@ -247,9 +247,9 @@ void setup(void){
 
 
   //Serial initialization////////////////////////
-    Serial.begin(UART_BAUDRATE);
+    Serial.begin(115200);
     Serial1.begin(115200); //Serial used to send to robot group
-    Serial2.begin(UART_BAUDRATE);
+    Serial2.begin(115200);
 
     //MPU6050 initialization//////////////////////
     initialize_imu();
@@ -450,8 +450,8 @@ union sendShort{    //definition of data typre to be able to separate data bytes
 
 void loop(void){
 
-
-////////////////////////////////////////////////////////////////////////////
+ /*
+ ////////////////////////////////////////////////////////////////////////////
   digitalWrite(pinStartLIDAR,HIGH);
 
   val=digitalRead(pinPhotoDiode);//photodiode val
@@ -506,10 +506,10 @@ void loop(void){
     bufFLAMES->pull(bufFLAMES, &sendBYTE);    
     Serial.write(sendBYTE);
   }
-*/
+ */
    //LIDAR
   
-  
+ /* 
   if(flagSave==1 && printLIDAR==0){
     //numPrintLidar=numLIDAR;
     printLIDAR=1;
@@ -609,11 +609,11 @@ void loop(void){
         //Serial.write(sendSHORT.send2[1]);  
         //Serial.write(sendSHORT.send2[0]);*/
 
-        
+    /*    
         digitalWrite(L3,LOW);
       }
     //}
-  } 
+  } */
 
 }
 
@@ -623,7 +623,7 @@ unsigned short incoming=0;
 void serialEvent2(){
   digitalWrite(L8,HIGH);
 
-  if(Serial2.available()>16){
+  if(Serial2.available()>12){
 
 
     incoming=(Serial2.read() <<8)|(Serial2.read());
@@ -650,7 +650,7 @@ void serialEvent2(){
     //bufLIDAR->add(bufLIDAR,&incoming);
     numPointsLIDAR++;
     Serial.println(incoming);
-    
+
   }
 
   digitalWrite(L8,LOW);
