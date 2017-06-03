@@ -16,6 +16,7 @@
 #define UART_BAUDRATE 2000000
 #define INT_PERIOD 2000
 #define MAX_TIME_COUNT 90000 //90 segundos
+#define WAIT_TIME 600
 
 ////////////////
 
@@ -28,7 +29,7 @@
 //Pin LIDAR
 #define pinStartLIDAR 7
 #define pinSaveLIDAR 8
-//#define pinPrintLIDAR 9
+#define pinDirection 9
 
 //PhotoDiode
 #define pinPhotoDiode 3
@@ -56,17 +57,6 @@ int pos = lowAngle, lastPos;
 //FLAMES
 #define readPeriodFLAMES 500
 
-//DHT
-#define DHTPIN 5  
-#define DHTTYPE DHT11
-//DHT connections
-// Connect pin 1 (on the left) of the sensor to +5V
-// NOTE: If using a board with 3.3V logic like an Arduino Due connect pin 1
-// to 3.3V instead of 5V!
-// Connect pin 2 of the sensor to whatever your DHTPIN is
-// Connect pin 4 (on the right) of the sensor to GROUND
-// Connect a 10K resistor from pin 2 (data) to pin 1 (power) of the sensor
-
 #ifdef DEBUG
 //Debug LEDs
 #define L1 30 //DHT
@@ -82,7 +72,6 @@ int pos = lowAngle, lastPos;
 //BUFFERS
 RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
 RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
-//RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
 RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
 RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
 
@@ -110,16 +99,6 @@ int tempMQ7;
 
 int val=0;
 
-
-
-
-//Variables (to be decided which stay, which go) 
-/*unsigned int counterMQ7;
-char mark;
-char isReading;
-char flagFlames, flagDHT;
-*/
-//volatile int countTemp=0; //Counter for DHT11
 //temporary vartiable for exchange data between variables
 short temp;
 byte temp2, sendBYTE, flameBYTE;
@@ -247,46 +226,44 @@ void setup(void){
 
   //Serial initialization////////////////////////
   Serial.begin(UART_BAUDRATE);
-    Serial1.begin(115200); //Serial used to send to robot group
-    Serial2.begin(UART_BAUDRATE);
+  Serial1.begin(115200); //Serial used to send to robot group
+  
 
-    //MPU6050 initialization//////////////////////
-    initialize_imu();
+  //MPU6050 initialization//////////////////////
+  initialize_imu();
 
-   //MQ7//////////////////////////////////
-    pinMode(togglePIN,OUTPUT);
-    digitalWrite(togglePIN,HIGH);
+ //MQ7//////////////////////////////////
+  pinMode(togglePIN,OUTPUT);
+  digitalWrite(togglePIN,HIGH);
 
-    //Initialize servo and sendo to pos 60
-    servo.attach(pinServo);
-    servo.write(pos);
+  //Initialize servo and sendo to pos 60
+  servo.attach(pinServo);
+  servo.write(pos);
 
-   //initialize brushless/////////////////////////
-   //set speed to 10
+ //initialize brushless/////////////////////////
+ //set speed to 10
 
-    brushless.attach(pinBrushless,1000,2000);
-    turnOn(brushless);
-    defineVelocity(velocity,brushless);
+  brushless.attach(pinBrushless,1000,2000);
+  turnOn(brushless);
+  defineVelocity(velocity,brushless);
 
-   //Interrupt from photodiode
-    //attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);////////////////////////////////////////////////////////////////////////////////
+ //Interrupt from photodiode
+  //attachInterrupt(digitalPinToInterrupt(pinPhotoDiode),changeAngle,RISING);////////////////////////////////////////////////////////////////////////////////
 
-    //Timer initialization///////////////////////////
-    //Timer is used for interrupt
+  //Timer initialization///////////////////////////
+  //Timer is used for interrupt
 
-    Timer3.initialize(INT_PERIOD);
-    Timer3.attachInterrupt(getSensors);
-    //interrupt every 1ms
-    Timer3.start();
-  }
-/////////////////////////////////////end setup
+  Timer3.initialize(INT_PERIOD);
+  Timer3.attachInterrupt(getSensors);
+  //interrupt every 1ms
+  Timer3.start();
+}
 
 void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
-//increment time variables
+  //increment time variables
   #ifdef DEBUG
   digitalWrite(L2,HIGH);
   #endif
-  //delay(1);///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   digitalWrite(pinSaveLIDAR,LOW);
   flagSave=0;
@@ -295,44 +272,53 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   
   if(val==HIGH){
     val=LOW;
-    if(currentTime >400){
+    if(currentTime >WAIT_TIME){
+      #ifdef DEBUG
+        digitalWrite(L5,HIGH);
+      #endif
 
-    #ifdef DEBUG
-      digitalWrite(L5,HIGH);
-    #endif
       digitalWrite(pinSaveLIDAR,HIGH);
+      if(digitalRead(pinDirection) == HIGH){
+        sDirection=1;
+      }else{
+        sDirection=0;
+      }
+
       flagSave=1;
+
       //Brushless motor speed feedback
       numLIDAR=numPointsLIDAR;
       numPointsLIDAR=0; 
-      canDo=1;
+      canDo=1; // Overide motor speed correction
 
-      if(currentTime > 630 && currentTime <680){
-        canDo=1;
-      }else if( currentTime<= 630){
-       //velocity=(velocity > 0)?(velocity-1):(0);
-        if (velocity == 0){
-          velocity=0;
-        }else{
-          velocity--;
+      /*
+        if(currentTime > 630 && currentTime <680){
+          canDo=1;
+        }else if( currentTime<= 630){
+          if (velocity == 0){
+            velocity=0;
+          }else{
+            velocity--;
+          }
+          canDo=0;
+        }else if( currentTime>= 680){
+          velocity++;
+          canDo=0;
         }
-        canDo=0;
-      }else if( currentTime>= 680){
-        velocity++;
-        canDo=0;
-      }
 
-      defineVelocity(velocity,brushless);
+        defineVelocity(velocity,brushless);
+      */
+      //Servo angle set
+      /*
+        if(pos>=upAngle){
+         sDirection=0;
+        }
+        if(pos<=lowAngle){
+          sDirection=1;
+        }
+      */
 
-    //Servo angle set
-      if(pos>=upAngle){
-        sDirection=0;
-      }
-      if(pos<=lowAngle){
-        sDirection=1;
-      }
-
-    //Changes servo angle if time canDo flag is set
+      //Changes servo angle if time canDo flag is set
       if(canDo==1){
         canDo = 0;
         lastPos=pos;
@@ -344,8 +330,8 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
         }
       }
 
-    //Only writes position to servo if the difference between positions is one
-    //Prevents false skips....
+      //Only writes position to servo if the difference between positions is one
+      //Prevents false skips....
       if(lastPos-pos==1 || pos-lastPos==1){
         servo.write(pos);
       }
@@ -353,69 +339,51 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     }
   }
 
-
-
-
-
-  //digitalWrite(pinSaveLIDAR,LOW);  //disables pinSave on next interrupt
-
-
-
-if(timeCount% readPeriodFLAMES == 0){
-   sendMPUtoRobot=1;
-   flagFLAMES1 =1;
-   flagFLAMES2 =1;
-   flagFLAMES3 =1;
-   flagCAlCflames=1;
- }
-
- if( timeCount%(readPeriodMQ7)==0){
-  flagMQ7=1;
+  if(timeCount% readPeriodFLAMES == 0){
+    sendMPUtoRobot=1;
+    flagFLAMES1 =1;
+    flagFLAMES2 =1;
+    flagFLAMES3 =1;
+    flagCAlCflames=1;
   }
 
-  if(timeCount < MAX_TIME_COUNT)
+  if( timeCount%(readPeriodMQ7)==0){
+    flagMQ7=1;
+  }
+
+  if(timeCount < MAX_TIME_COUNT){
     timeCount++;
-  else
+  }else{
     timeCount=0;
+  }
 
-  /*if(timeCount-oldTime > 200){ //makes LIDAR save data
-    oldTime=timeCount;
-    flagSave=digitalRead(pinPhotoDiode);
-    if(flagSave==1)
-      digitalWrite(pinSaveLIDAR,HIGH);
-    else
+  switch(countInt){
+    case 0:
 
-      digitalWrite(pinSaveLIDAR,LOW);
+    //runA();
+    //flagSend=0;
+    // break;
+    //case 1:
+    //runB();
 
-  numLIDAR=0;
-}*/
-
-switch(countInt){
-  case 0:
-
-  //runA();
-  //flagSend=0;
- // break;
-  //case 1:
-  //runB();
-
-  //break;
-  case 1:
+    //break;
+    case 1:
 
 
-  runC();
-  flagSend=1;
+    runC();
+    flagSend=1;
 
-  break;
-  default:
+    break;
+    default:
 
-  break;
-}
+    break;
+  }
 
-if(countInt <1)
-  countInt++;
-else
-  countInt=0;
+  if(countInt <1){
+    countInt++;
+  }else{
+    countInt=0;
+  }
 
   //countInt=(countInt<3)?(countInt++):(0);//verifica se countInt <3 se for incrementa se não passa para 0;
   //RUNNING LIST
@@ -424,16 +392,12 @@ else
   //3 - analogSensor
 
   #ifdef DEBUG
-digitalWrite(L2,LOW);
+  digitalWrite(L2,LOW);
   #endif
 
   #ifdef DEBUG
-digitalWrite(L5,LOW);
-    #endif
-
-/*  #ifdef DEBUG
-digitalWrite(L1,LOW);
-  #endif*/
+  digitalWrite(L5,LOW);
+  #endif
 }
 
 
@@ -442,240 +406,16 @@ union sendShort{    //definition of data typre to be able to separate data bytes
   byte send2[2];
 }sendSHORT, sendShortRobot;
 
-
-////// inicializações para testes
-
-
-////// fim das initializações para testes 
-
-
-
-
 void loop(void){
-////////////////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////
   digitalWrite(pinStartLIDAR,HIGH);
 
   val=digitalRead(pinPhotoDiode);//photodiode val
   digitalWrite(13, val);
 
-
-
-	if(sendMPUtoRobot==1){ //send MPU z data to robot team
-		
-		Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255
-
-	}
-  /*
-
-	if(bufMPU->numElements(bufMPU) >3){
-    while(Serial.availableForWrite()<8);
-      #ifdef DEBUG
-
-    Serial.print(idMPU);
-    Serial.print("  ");
-
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.print(sendSHORT.send1);
-
-
-    Serial.print("  ");
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.print(sendSHORT.send1);
-
-    Serial.print("  ");
-    bufMPU->pull(bufMPU, &sendSHORT);
-    sendShortRobot=sendSHORT;
-    Serial.println(sendSHORT.send1);
-
-
-
-
-      #else
-    Serial.write(idMPU);
-
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.write(sendSHORT.send2[1]);
-    Serial.write(sendSHORT.send2[0]);
-
-    bufMPU->pull(bufMPU, &sendSHORT);
-    Serial.write(sendSHORT.send2[1]);
-    Serial.write(sendSHORT.send2[0]);
-
-    bufMPU->pull(bufMPU, &sendSHORT);
-    sendShortRobot=sendSHORT;
-    Serial.write(sendSHORT.send2[1]);
-    Serial.write(sendSHORT.send2[0]);
-
-      #endif
+  if(sendMPUtoRobot==1){ //send MPU z data to robot team
+    Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255
   }
-
-  if(bufMQ7->numElements(bufMQ7) >1){
-
-
-    while(Serial.availableForWrite()<2);
-    Serial.write(idMQ7);
-
-    bufMQ7->pull(bufMQ7, &sendBYTE);   
-    Serial.write(sendBYTE);
-  }
-
-    //FLAMES
-
-  if (bufFLAMES-> numElements(bufFLAMES) > 1){
-
-    while(Serial.availableForWrite()<2);
-    Serial.write(idFLAMES);
-
-    bufFLAMES->pull(bufFLAMES, &sendBYTE);    
-    Serial.write(sendBYTE);
-  }
-*/
-   //LIDAR
-
-  if(flagSave==1 && printLIDAR==0){
-    //numPrintLidar=numLIDAR;
-    printLIDAR=1;
-    printNum=numLIDAR;
-    //Serial.write(printNum);
-  }
-
-    //Serial.write(idLIDAR);
-      //Serial.println(numLIDAR);
-  if(printLIDAR==1){
-    //if(numLIDAR > 100){
-      if(Serial.availableForWrite() > 16){// numPrintLidar){
-
-        if(printNum==0){
-          printLIDAR=0;
-          //Serial.write(0x00);
-
-          //Serial.write(0x00);
-          
-          //Serial.write(idLIDAR);
-        }else{
-          printNum--;
-        }
-
-        bufLIDAR->pull(bufLIDAR, &sendSHORT);
-        Serial.println(sendSHORT.send1);
-        //Serial.write(sendSHORT.send2[1]);  
-        //Serial.write(sendSHORT.send2[0]);
-      }
-    //}
-  } 
-
-
-
-
-
-
-
-/*
-  if(digitalRead(pinPhotoDiode)==1){
-    lastTime=currentTime;
-    currentTime=millis();
-    if(currentTime-lastTime >100){
-    #ifdef DEBUG
-      digitalWrite(L4,HIGH);
-    #endif
-  //Brushless motor speed feedback
-      numLIDAR=numPointsLIDAR;
-      numPointsLIDAR=0; 
-
-      if(currentTime-lastTime > 630 && currentTime-lastTime <680){
-        canDo=1;
-
-    }/*else if( currentTime-lastTime <= 630){
-      velocity=(velocity > 0)?(velocity-1):(0);
-      // if (velocity == 0){
-      //   velocity=0;
-      // }else{
-      //   velocity--;
-      // }
-      canDo=0;
-    }else if( currentTime-lastTime >= 680){
-      velocity++;
-      canDo=0;
-    }*/
-/*
-        defineVelocity(velocity,brushless);
-
-    //Servo angle set
-        if(pos>=upAngle){
-          sDirection=0;
-        }
-        if(pos<=lowAngle){
-          sDirection=1;
-        }
-
-    //Changes servo angle if time canDo flag is set
-        if(canDo==1){
-          canDo = 0;
-          lastPos=pos;
-          if(sDirection==1){
-            pos++;
-          }
-          if(sDirection==0){
-            pos--;
-          }
-        }
-
-    //Only writes position to servo if the difference between positions is one
-    //Prevents false skips....
-        if(lastPos-pos==1 || pos-lastPos==1){
-          servo.write(pos);
-        }
-
-      }
-  #ifdef DEBUG
-      digitalWrite(L4,LOW);
-  #endif
-    }
-
-
-     // changeAngle();
-  // ENVIAR DADOS
-  /*if (flagSend==1)
-    digitalWrite(L3,HIGH);
-  else 
-    digitalWrite(L3 ,LOW);
-
-  if(flagSend==1){
-
-  }*/
-}
-
-short incoming=0;
-
-void serialEvent2(){
-  digitalWrite(L8,HIGH);
-  if(Serial2.available()>10){
-    incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
-    numPointsLIDAR++;
-    //Serial.println(incoming);
-    incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
-    numPointsLIDAR++;
-    //Serial.println(incoming);
-    incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
-    numPointsLIDAR++;
-    //Serial.println(incoming);
-    incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
-    numPointsLIDAR++;
-    //Serial.println(incoming);
-    incoming=(Serial2.read() <<8)|(Serial2.read());
-    bufLIDAR->add(bufLIDAR,&incoming);
-    numPointsLIDAR++;
-    //Serial.println(incoming);
-  }
-
-  digitalWrite(L8,LOW);
-
 
 }
-
-
 
