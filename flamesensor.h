@@ -10,7 +10,7 @@
 
 /*Exponential Moving Average - Alpha parameter */
 #ifndef EMA_ALPHA
-#define EMA_ALPHA 10 /*This is in percentage. Should be between 0-99* - Corresponds to amount of smoothing.*/
+#define EMA_ALPHA 15 /*This is in percentage. Should be between 0-99* - Corresponds to amount of smoothing.*/
 
 
 
