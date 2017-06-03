@@ -17,6 +17,7 @@
 #define pinSTARTlidar 7
 #define pinSAVElidar 8
 #define pinDirection 9
+#define pinCompleteLIDAR 10
 
 ////////////////
 
@@ -110,6 +111,7 @@ void setup(void){
 	pinMode(11,OUTPUT);
 	pinMode(12,OUTPUT);
 	pinMode(13,OUTPUT);
+	pinMode(pinCompleteLIDAR,OUTPUT);
 
 	//Serial initialization////////////////////////
 	Serial.begin(UART_BAUDRATE);
@@ -139,15 +141,22 @@ void loop(void){
 
   	if(sDirection==1){
   		digitalWrite(pinDirection,HIGH);
-  	}else{
+  		pos=lowAngle;
+  		sDirection=1;
+  	}else if(sDirection==0){
   		digitalWrite(pinDirection,LOW);
   	}
 
 	if(saveLIDAR==1){
 		saveLIDAR=0;
 		//Servo angle set
+
+    	digitalWrite(pinCompleteLIDAR,LOW);
         if(pos>=upAngle){
-    		sDirection=0;
+        	//make lidar stop and go back to 60degrees
+        	digitalWrite(pinCompleteLIDAR,HIGH);
+        	pos=lowAngle;
+        	sDirection=1;
 	    }
 	    if(pos<=lowAngle){
 	    	sDirection=1;
@@ -157,9 +166,9 @@ void loop(void){
         if(sDirection==1){
           	pos++;
         }
-        if(sDirection==0){
+        /*if(sDirection==0){
           	pos--;
-        }
+        }*/
       
 		numPrintLidar=numPointsLIDAR;
 		numPointsLIDAR=0; //reset ao numero de pontos do lidar
@@ -180,8 +189,8 @@ void loop(void){
 				if(printNum==numPrintLidar){
 					//Serial.write(idLIDAR);
 					//Serial.write(pos);
-					Serial.println(idLIDAR);
-					Serial.println(pos);
+					//Serial.println(idLIDAR);
+					//Serial.println(pos);
 				}
 
 				if(printNum==0){
@@ -261,19 +270,20 @@ void loop(void){
 			}else{
 				distance = (distanceFast(false));
 			}
-
-			if(distance>500){
-				distance=255;
-			}else if(distance < 10){
-				distance=0;
-			}else{
-				distance=map(distance,10,500,0,254);
+			if(distance>=10){
+				if(distance>300){
+					distance=255;
+				}else if(distance < 10){
+					distance=0;
+				}else{
+					//distance=map(distance,10,500,0,254);
+				}
+				bufLIDAR->add(bufLIDAR,&distance);
+				numPointsLIDAR++;
 			}
-			bufLIDAR->add(bufLIDAR,&distance);
-			numPointsLIDAR++;
 		}
 	}
-	delay(1);
+	delay(2);
 }
 
 

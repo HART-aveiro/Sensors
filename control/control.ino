@@ -30,6 +30,7 @@
 #define pinStartLIDAR 7
 #define pinSaveLIDAR 8
 #define pinDirection 9
+#define pinCompleteLIDAR 10
 
 //PhotoDiode
 #define pinPhotoDiode 3
@@ -216,6 +217,7 @@ void setup(void){
   #endif
 
   pinMode(pinPhotoDiode, INPUT);
+  pinMode(pinCompleteLIDAR,INPUT);
   pinMode(13, OUTPUT);
 
 
@@ -412,12 +414,25 @@ void loop(void){
   ////////////////////////////////////////////////////////////////////////////
   if(Serial.available()>0){
     data=Serial.read();
-    if(data=='L')
+    if(data=='L'){
       flagLIDAR=1;
       pos=lowAngle;
       sDirection=1;
-    if(data=='S')
+    }
+    if(data=='S'){
       flagLIDAR=0;
+      pos=lowAngle;
+      sDirection=1;
+    } 
+  }
+
+
+  if(digitalRead(pinCompleteLIDAR)==HIGH){
+    pos=lowAngle;
+    servo.write(pos);
+    sDirection=1;
+    flagLIDAR=0;
+    //Send operation for done
   }
 
   if(flagLIDAR==1){
