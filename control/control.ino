@@ -16,7 +16,7 @@
 #define UART_BAUDRATE 2000000
 #define INT_PERIOD 2000
 #define MAX_TIME_COUNT 90000 //90 segundos
-#define WAIT_TIME 600
+#define WAIT_TIME 300
 
 ////////////////
 
@@ -113,7 +113,7 @@ int i=0; // temporary val
 //LIDARLite myLidarLite;
 int numLIDAR=0;
 int numPointsLIDAR=0;
-byte flagLIDARcomplete=0;
+byte flagLIDAR=0;
 
 byte sendMPUtoRobot=0;
 
@@ -406,12 +406,31 @@ union sendShort{    //definition of data typre to be able to separate data bytes
   byte send2[2];
 }sendSHORT, sendShortRobot;
 
+char data;
+
 void loop(void){
   ////////////////////////////////////////////////////////////////////////////
-  digitalWrite(pinStartLIDAR,HIGH);
+  if(Serial.available()>0){
+    data=Serial.read();
+    if(data=='L')
+      flagLIDAR=1;
+      pos=lowAngle;
+      sDirection=1;
+    if(data=='S')
+      flagLIDAR=0;
+  }
+
+  if(flagLIDAR==1){
+      digitalWrite(pinStartLIDAR,HIGH);
+      digitalWrite(13,HIGH);
+  }else{
+      digitalWrite(pinStartLIDAR,LOW);
+      digitalWrite(13,LOW);
+  }
+  //if(pinLIDARcomplete)/////////////////////////////////////////////////////////add feature
 
   val=digitalRead(pinPhotoDiode);//photodiode val
-  digitalWrite(13, val);
+  //digitalWrite(13, val);
 
   if(sendMPUtoRobot==1){ //send MPU z data to robot team
     Serial1.write(sendShortRobot.send1); //only send the x value as a byte from 0 to 255

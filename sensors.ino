@@ -10,7 +10,7 @@
 #define DEBUG 1
 //to exit debug mode delete previous line ( #define DEBUG 1 )
 
-#define UART_BAUDRATE 115200
+#define UART_BAUDRATE 2000000
 #define INT_PERIOD 1000
 #define MAX_TIME_COUNT 90000 //90 segundos
 
@@ -102,12 +102,14 @@ int distanceFast(bool biasCorrection){
 	return distance;
 }
 
-
-
 void setup(void){
 	pinMode(pinSAVElidar, INPUT);
 	pinMode(pinSTARTlidar, INPUT);
 	pinMode(pinDirection, OUTPUT);
+
+	pinMode(11,OUTPUT);
+	pinMode(12,OUTPUT);
+	pinMode(13,OUTPUT);
 
 	//Serial initialization////////////////////////
 	Serial.begin(UART_BAUDRATE);
@@ -133,21 +135,23 @@ void loop(void){
 		digitalWrite(13,LOW);
 	}
 
+	
+
+  	if(sDirection==1){
+  		digitalWrite(pinDirection,HIGH);
+  	}else{
+  		digitalWrite(pinDirection,LOW);
+  	}
+
 	if(saveLIDAR==1){
 		saveLIDAR=0;
 		//Servo angle set
         if(pos>=upAngle){
-        	sDirection=0;
-        }
-        if(pos<=lowAngle){
-        	sDirection=1;
-      	}
-
-      	if(sDirection==1){
-      		digitalWrite(pinDirection,HIGH);
-      	}else{
-      		digitalWrite(pinDirection,LOW);
-      	}
+    		sDirection=0;
+	    }
+	    if(pos<=lowAngle){
+	    	sDirection=1;
+	  	}
       	
     	//Changes servo angle if time canDo flag is set
         if(sDirection==1){
@@ -161,38 +165,91 @@ void loop(void){
 		numPointsLIDAR=0; //reset ao numero de pontos do lidar
 		printNum=numPrintLidar; //variavel de controlo para impressao
 		printLIDARdata=1;//activa a impressao de pontos para a serie
-		Serial.write(0x03);
+		//Serial.write(0x03);
 		//Serial.write(printNum);
 	}
 
 	//Print section
 	//printLIDARdata=digitalRead(pinPRINTlidar);
 	if(printLIDARdata==1){
+		
 		if(numPrintLidar > 200){
+		digitalWrite(12,HIGH);
 			//digitalWrite(13,HIGH);
-			if(Serial.availableForWrite() > 4){
+			if(Serial.availableForWrite() > 13){
 				if(printNum==numPrintLidar){
-					Serial.write(idLIDAR);
-					Serial.write(pos);
+					//Serial.write(idLIDAR);
+					//Serial.write(pos);
+					Serial.println(idLIDAR);
+					Serial.println(pos);
 				}
 
 				if(printNum==0){
 					printLIDARdata=0;
+				}else if (printNum >=10){
+					printNum=printNum-10;
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
+
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
 				}else{
 					printNum=printNum-1;
+					bufLIDAR->pull(bufLIDAR, &sendBYTE);
+					//Serial.write(sendBYTE);
+					Serial.println(sendBYTE);
 				}
 
-				bufLIDAR->pull(bufLIDAR, &sendBYTE);
-				Serial.write(sendBYTE)
-				//digitalWrite(13,LOW);
+
+				
 			}
 		}
+
+		digitalWrite(12,LOW);
 	}
 
 	if(digitalRead(pinSTARTlidar)==HIGH){
 		startLIDAR=1;
+		pos=lowAngle;
+		digitalWrite(11,HIGH);
 	}else{
-		startLIDAR=0;
+		startLIDAR=0;		
+		digitalWrite(11,LOW);
 	}
 
 	//Measurement section
