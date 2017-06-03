@@ -9,6 +9,8 @@
 #include "flamesensor.h"
 #include <LIDARLite.h>
 
+////////////////////////////////////// Constants, IDs and pins specifications //////////////////////////////////
+
 //Things to change
 #define DEBUG 1
 //to exit debug mode delete previous line ( #define DEBUG 1 )
@@ -16,8 +18,6 @@
 #define UART_BAUDRATE 2000000
 #define INT_PERIOD 1000
 #define MAX_TIME_COUNT 90000 //90 segundos
-
-////////////////
 
 #define idLIDAR 0x01
 #define idDHT 0x02
@@ -32,10 +32,6 @@
 #define pinServo 11
 #define lowAngle 60
 #define upAngle 140
-
-int canDo;
-int sDirection=0;
-int pos = lowAngle, lastPos;
 
 //Brushless
 #define pinBrushless 12
@@ -74,20 +70,21 @@ int pos = lowAngle, lastPos;
 #define L8 37 ////OK////////////////////////////
 #endif
 
-//BUFFERS
-RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
-RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
-//RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
-RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
-RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
-
-//time variables for photodiode interrupt
-long lastTime, currentTime;
+/////////////////////////////////////// Variable declarations //////////////////////////////////////////////////
+int canDo;
+int tempMQ7;
+int sDirection=0;
+int pos = lowAngle, lastPos;
 
 //counter variables for interrupts
 int countInt=0; //Counter for timer 3 interrupt
 int timeCount=0;
 
+//time variables for photodiode interrupt
+long lastTime, currentTime;
+
+//time variables for photodiode interrupt
+long lastTime, currentTime;
 //flags to read and cal FLAME sensors
 byte flagFLAMESdone =0;
 byte flagCAlCflames=0;
@@ -98,13 +95,9 @@ byte flagFLAMES3=0;
 byte s1, s2, s3;
 
 byte flagSend=1;
-
+byte sendMPUtoRobot=0;
 //flag to run MQ7 reading
 byte flagMQ7=0;
-int tempMQ7;
-
-
-
 
 //Variables (to be decided which stay, which go) 
 /*unsigned int counterMQ7;
@@ -140,6 +133,16 @@ int velocity=10;
 float h = NAN,t = NAN;
 DHT dht(DHTPIN, DHTTYPE); //dht object declaration
 
+
+/////////////////////////////////////////////// BUFFERS ////////////////////////////////////////////////////////
+
+RingBuf *bufMPU = RingBuf_new(sizeof(short), 21);
+RingBuf *bufLIDAR = RingBuf_new(sizeof(short), 1000);
+//RingBuf *bufDHT = RingBuf_new(sizeof(byte), 8);
+RingBuf *bufFLAMES = RingBuf_new(sizeof(byte), 8);
+RingBuf *bufMQ7 = RingBuf_new(sizeof(byte), 8);
+
+////////////////////////////////////////////// Methods ////////////////////////////////////////////////////////
 void getSensors(void);
 void changeAngle(void);
 
@@ -412,8 +415,6 @@ void changeAngle(){
     digitalWrite(L4,LOW);
   #endif
   }
-
-byte sendMPUtoRobot=0;
 
 void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets counter for DHT11 to run
 //increment time variables
