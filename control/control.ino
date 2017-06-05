@@ -128,7 +128,7 @@ PWMServo servo;
 
 //Brushless
 PWMServo brushless;
-int velocity=20;
+int velocity=25;
 
 // //DHT
 // float h = NAN,t = NAN;
@@ -232,7 +232,7 @@ void setup(void){
   
 
   //MPU6050 initialization//////////////////////
-  initialize_imu();
+  //initialize_imu();
 
  //MQ7//////////////////////////////////
   pinMode(togglePIN,OUTPUT);
@@ -276,7 +276,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     val=LOW;
     if(currentTime >WAIT_TIME){
       #ifdef DEBUG
-        digitalWrite(L5,HIGH);
+      digitalWrite(L5,HIGH);
       #endif
 
       digitalWrite(pinSaveLIDAR,HIGH);
@@ -291,24 +291,24 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
       //Brushless motor speed feedback
       numLIDAR=numPointsLIDAR;
       numPointsLIDAR=0; 
-      canDo=1; // Overide motor speed correction
+      
 
       /*
-        if(currentTime > 630 && currentTime <680){
-          canDo=1;
-        }else if( currentTime<= 630){
-          if (velocity == 0){
-            velocity=0;
-          }else{
-            velocity--;
-          }
-          canDo=0;
-        }else if( currentTime>= 680){
-          velocity++;
-          canDo=0;
+      if(currentTime > 630 && currentTime <680){
+        canDo=1;
+      }else if( currentTime<= 630){
+        if (velocity == 0){
+          velocity=0;
+        }else{
+          velocity--;
         }
+        canDo=0;
+      }else if( currentTime>= 680){
+        velocity++;
+        canDo=0;
+      }
 
-        defineVelocity(velocity,brushless);
+      defineVelocity(velocity,brushless);
       */
       //Servo angle set
       /*
@@ -320,6 +320,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
         }
       */
 
+      canDo=1; // Overide motor speed correction
       //Changes servo angle if time canDo flag is set
       if(canDo==1){
         canDo = 0;
@@ -327,7 +328,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
         if(sDirection==1){
           pos++;
         }
-        if(sDirection==0){
+        if(sDirection==2){
           pos--;
         }
       }
@@ -341,6 +342,8 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
     }
   }
 
+
+  /*
   if(timeCount% readPeriodFLAMES == 0){
     sendMPUtoRobot=1;
     flagFLAMES1 =1;
@@ -392,7 +395,7 @@ void getSensors(void){ //ISR function, gets data from MPU@250HZ, LIDAR and  sets
   //1 - MPU   - getReadings//lidar
   //2 - MPU   - calculations//lidar
   //3 - analogSensor
-
+  */
   #ifdef DEBUG
   digitalWrite(L2,LOW);
   #endif
@@ -414,33 +417,40 @@ void loop(void){
   ////////////////////////////////////////////////////////////////////////////
   if(Serial.available()>0){
     data=Serial.read();
-    if(data=='L'){
+  //data= digitalRead(pinStartLIDAR);
+    if(data == 0x07){
       flagLIDAR=1;
       pos=lowAngle;
       sDirection=1;
+      digitalWrite(13,HIGH);
     }
-    if(data=='S'){
-      flagLIDAR=0;
-      pos=lowAngle;
-      sDirection=1;
-    } 
   }
+
+
+    // }else{
+    //   flagLIDAR=0;
+    //   pos=lowAngle;
+    //   sDirection=1;
+    // }
+  
 
 
   if(digitalRead(pinCompleteLIDAR)==HIGH){
     pos=lowAngle;
+
     servo.write(pos);
     sDirection=1;
     flagLIDAR=0;
+    digitalWrite(13,LOW);
     //Send operation for done
   }
 
   if(flagLIDAR==1){
-      digitalWrite(pinStartLIDAR,HIGH);
-      digitalWrite(13,HIGH);
+    digitalWrite(pinStartLIDAR,HIGH);
+    digitalWrite(L6,HIGH);
   }else{
-      digitalWrite(pinStartLIDAR,LOW);
-      digitalWrite(13,LOW);
+    digitalWrite(pinStartLIDAR,LOW);
+    digitalWrite(L6,LOW);
   }
   //if(pinLIDARcomplete)/////////////////////////////////////////////////////////add feature
 
