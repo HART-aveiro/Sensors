@@ -1,5 +1,5 @@
 
-#include <Servo.h> 
+#include <PWMServo.h> 
 #include "brsh.h"
 
 void setup() {
